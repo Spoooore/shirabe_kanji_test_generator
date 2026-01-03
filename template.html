@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%%TITLE%%</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink-black: #1a1a1a;
+            --paper-cream: #f5f0e6;
+            --accent-vermillion: #e63946;
+            --accent-indigo: #2d4059;
+            --gold-highlight: #d4a574;
+            --soft-shadow: rgba(45, 64, 89, 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: linear-gradient(135deg, var(--paper-cream) 0%, #ebe3d5 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(214, 165, 116, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(230, 57, 70, 0.05) 0%, transparent 50%);
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px var(--soft-shadow);
+            border-left: 4px solid var(--accent-vermillion);
+        }
+        
+        h1 {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 2.5rem;
+            color: var(--ink-black);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--accent-indigo);
+            font-style: italic;
+        }
+        
+        .question-card {
+            background: white;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem 2rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 15px var(--soft-shadow);
+            border-left: 3px solid var(--gold-highlight);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 25px var(--soft-shadow);
+        }
+        
+        .question-number {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.85rem;
+            color: var(--accent-vermillion);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.15em;
+        }
+        
+        .question-text {
+            font-size: 1.3rem;
+            color: var(--ink-black);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .question-text .kanji {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.8rem;
+            color: var(--accent-indigo);
+            font-weight: 700;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background: var(--paper-cream);
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .option:hover {
+            border-color: var(--gold-highlight);
+            background: #faf6ef;
+        }
+        
+        .option.selected {
+            border-color: var(--accent-indigo);
+            background: rgba(45, 64, 89, 0.08);
+        }
+        
+        .option.correct {
+            border-color: #2e7d32;
+            background: rgba(46, 125, 50, 0.1);
+        }
+        
+        .option.incorrect {
+            border-color: var(--accent-vermillion);
+            background: rgba(230, 57, 70, 0.1);
+        }
+        
+        .option-letter {
+            font-family: 'Noto Sans JP', sans-serif;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-indigo);
+            color: white;
+            border-radius: 50%;
+            margin-right: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .option.correct .option-letter {
+            background: #2e7d32;
+        }
+        
+        .option.incorrect .option-letter {
+            background: var(--accent-vermillion);
+        }
+        
+        .option-text {
+            font-size: 1.1rem;
+            color: var(--ink-black);
+            font-family: 'Noto Sans JP', 'Crimson Pro', serif;
+        }
+        
+        .submit-section {
+            text-align: center;
+            margin: 3rem 0;
+        }
+        
+        button {
+            font-family: 'Noto Sans JP', sans-serif;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.1em;
+        }
+        
+        .submit-btn {
+            background: var(--accent-vermillion);
+            color: white;
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+        }
+        
+        .submit-btn:hover {
+            background: #c1121f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4);
+        }
+        
+        .reset-btn {
+            background: var(--accent-indigo);
+            color: white;
+            margin-left: 1rem;
+            box-shadow: 0 4px 15px rgba(45, 64, 89, 0.3);
+        }
+        
+        .reset-btn:hover {
+            background: #1e3046;
+        }
+        
+        .results {
+            background: white;
+            padding: 2rem;
+            border-radius: 4px;
+            margin-top: 2rem;
+            box-shadow: 0 4px 20px var(--soft-shadow);
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .results-header {
+            text-align: center;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid var(--paper-cream);
+            margin-bottom: 2rem;
+        }
+        
+        .score {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 4rem;
+            color: var(--accent-vermillion);
+            font-weight: 700;
+        }
+        
+        .score.perfect {
+            color: #2e7d32;
+        }
+        
+        .score-label {
+            font-size: 1.2rem;
+            color: var(--accent-indigo);
+            margin-top: 0.5rem;
+        }
+        
+        .score-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .mistakes-section {
+            text-align: left;
+        }
+        
+        .mistakes-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.3rem;
+            color: var(--accent-vermillion);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .mistakes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .mistake-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background: var(--paper-cream);
+            border-radius: 4px;
+            border-left: 3px solid var(--accent-vermillion);
+            transition: all 0.2s ease;
+        }
+        
+        .mistake-item:hover {
+            transform: translateX(4px);
+            background: #faf6ef;
+        }
+        
+        .mistake-kanji {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 2rem;
+            color: var(--accent-indigo);
+            font-weight: 700;
+            min-width: 80px;
+        }
+        
+        .mistake-info {
+            flex: 1;
+            margin-left: 1rem;
+        }
+        
+        .mistake-reading {
+            font-family: 'Noto Sans JP', sans-serif;
+            color: var(--gold-highlight);
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .mistake-meaning {
+            color: var(--ink-black);
+            font-size: 1rem;
+        }
+        
+        .jisho-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            background: var(--accent-indigo);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: 'Noto Sans JP', sans-serif;
+            transition: all 0.2s ease;
+        }
+        
+        .jisho-link:hover {
+            background: #1e3046;
+            transform: scale(1.05);
+        }
+        
+        .no-mistakes {
+            text-align: center;
+            padding: 2rem;
+            color: #2e7d32;
+            font-size: 1.2rem;
+        }
+        
+        .no-mistakes-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .stat-box {
+            background: var(--paper-cream);
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-indigo);
+        }
+        
+        .stat-value.correct {
+            color: #2e7d32;
+        }
+        
+        .stat-value.incorrect {
+            color: var(--accent-vermillion);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--ink-black);
+            margin-top: 0.25rem;
+        }
+        
+        .review-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .review-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--gold-highlight);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .review-btn:hover {
+            background: #c4956a;
+            transform: translateY(-2px);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0d8cc;
+            border-radius: 3px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-vermillion), var(--gold-highlight));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .question-type {
+            font-size: 0.75rem;
+            color: var(--gold-highlight);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.25rem;
+        }
+        
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.8rem; }
+            .question-text { font-size: 1.1rem; }
+            .option { padding: 0.75rem 1rem; }
+            button { padding: 0.75rem 2rem; }
+            .score { font-size: 3rem; }
+            .summary-stats {
+                grid-template-columns: 1fr;
+            }
+            .mistake-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .mistake-info {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            .jisho-link {
+                margin-top: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>漢字テスト</h1>
+            <p class="subtitle">%%TITLE%% — Test z kanji</p>
+        </header>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress" style="width: 0%"></div>
+        </div>
+        
+        <noscript>
+            <div style="padding: 20px; background: #ffe0e0; border-radius: 8px; text-align: center;">
+                ⚠️ Ten test wymaga włączonego JavaScript. Włącz JavaScript w ustawieniach przeglądarki.
+            </div>
+        </noscript>
+        <div id="questions">
+            <div style="padding: 20px; text-align: center; color: #888;">Ładowanie pytań...</div>
+        </div>
+        
+        <div class="submit-section">
+            <button class="submit-btn" onclick="checkAnswers()">答えを確認 — Sprawdź</button>
+            <button class="reset-btn" onclick="resetTest()">もう一度 — Od nowa</button>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="results-header">
+                <div class="score-emoji" id="score-emoji">📝</div>
+                <div class="score" id="score">0%</div>
+                <div class="score-label" id="score-text">Wynik testu</div>
+                
+                <div class="summary-stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-questions">0</div>
+                        <div class="stat-label">Wszystkich pytań</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value correct" id="correct-count">0</div>
+                        <div class="stat-label">Poprawnych</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value incorrect" id="incorrect-count">0</div>
+                        <div class="stat-label">Błędnych</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mistakes-section" id="mistakes-section">
+                <div class="mistakes-title">📖 Słówka do powtórki</div>
+                <div class="mistakes-list" id="mistakes-list"></div>
+            </div>
+            
+            <div class="review-actions">
+                <button class="review-btn" onclick="scrollToFirstMistake()">🔍 Przejdź do błędów</button>
+                <button class="review-btn" onclick="copyMistakesToClipboard()">📋 Kopiuj listę</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ES5-compatible version for older Safari/iOS
+        var questions = %%QUESTIONS_JSON%%;
+        var answers = {};
+        
+        var typeLabels = {
+            'kanji_to_polish': '日→PL Przetłumacz kanji na polski',
+            'polish_to_kanji': 'PL→日 Przetłumacz na japoński',
+            'reading': '読み方 Wybierz poprawne czytanie',
+            'reading_to_kanji': '音→字 Które kanji ma to czytanie?',
+            'kanji_compound': '熟語 Znaczenie złożenia kanji'
+        };
+        
+        function renderQuestions() {
+            var container = document.getElementById('questions');
+            var html = '';
+            
+            for (var idx = 0; idx < questions.length; idx++) {
+                var q = questions[idx];
+                var optionsHtml = '';
+                
+                for (var optIdx = 0; optIdx < q.options.length; optIdx++) {
+                    var opt = q.options[optIdx];
+                    var letter = String.fromCharCode(97 + optIdx);
+                    optionsHtml += '<div class="option" onclick="selectOption(' + idx + ', ' + optIdx + ')" id="opt-' + idx + '-' + optIdx + '">' +
+                        '<span class="option-letter">' + letter + '</span>' +
+                        '<span class="option-text">' + opt + '</span>' +
+                        '</div>';
+                }
+                
+                html += '<div class="question-card" id="q' + idx + '">' +
+                    '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                    '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                    '<div class="question-text">' + q.question + '</div>' +
+                    '<div class="options">' + optionsHtml + '</div>' +
+                    '</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function selectOption(qIdx, optIdx) {
+            // Remove previous selection
+            var options = document.querySelectorAll('#q' + qIdx + ' .option');
+            for (var i = 0; i < options.length; i++) {
+                options[i].classList.remove('selected');
+            }
+            
+            // Add new selection
+            document.getElementById('opt-' + qIdx + '-' + optIdx).classList.add('selected');
+            answers[qIdx] = optIdx;
+            
+            // Update progress
+            var answeredCount = Object.keys(answers).length;
+            var progress = answeredCount / questions.length * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+        
+        function checkAnswers() {
+            var correct = 0;
+            var mistakes = [];
+            
+            for (var idx = 0; idx < questions.length; idx++) {
+                var q = questions[idx];
+                var options = document.querySelectorAll('#q' + idx + ' .option');
+                
+                for (var optIdx = 0; optIdx < options.length; optIdx++) {
+                    var opt = options[optIdx];
+                    opt.classList.remove('selected', 'correct', 'incorrect');
+                    if (optIdx === q.correct) {
+                        opt.classList.add('correct');
+                    } else if (answers[idx] === optIdx) {
+                        opt.classList.add('incorrect');
+                    }
+                }
+                
+                if (answers[idx] === q.correct) {
+                    correct++;
+                } else {
+                    mistakes.push(q);
+                }
+            }
+            
+            var incorrect = questions.length - correct;
+            var percentage = Math.round(correct / questions.length * 100);
+            
+            // Update score display
+            var scoreEl = document.getElementById('score');
+            scoreEl.textContent = percentage + '%';
+            if (percentage === 100) {
+                scoreEl.classList.add('perfect');
+            } else {
+                scoreEl.classList.remove('perfect');
+            }
+            
+            // Update emoji based on score
+            var emoji = '😔';
+            if (percentage === 100) emoji = '🎉';
+            else if (percentage >= 90) emoji = '🌟';
+            else if (percentage >= 70) emoji = '😊';
+            else if (percentage >= 50) emoji = '🤔';
+            document.getElementById('score-emoji').textContent = emoji;
+            
+            var scoreText = 'Poćwicz jeszcze trochę!';
+            if (percentage === 100) scoreText = 'Doskonale! Wszystko poprawnie!';
+            else if (percentage >= 70) scoreText = 'Dobra robota!';
+            document.getElementById('score-text').textContent = scoreText;
+            
+            // Update stats
+            document.getElementById('total-questions').textContent = questions.length;
+            document.getElementById('correct-count').textContent = correct;
+            document.getElementById('incorrect-count').textContent = incorrect;
+            
+            // Render mistakes list
+            var mistakesSection = document.getElementById('mistakes-section');
+            var mistakesList = document.getElementById('mistakes-list');
+            
+            if (mistakes.length === 0) {
+                mistakesSection.innerHTML = '<div class="no-mistakes">' +
+                    '<span class="no-mistakes-emoji">🏆</span>' +
+                    'Gratulacje! Nie masz żadnych błędów!<br>' +
+                    'Znasz wszystkie kanji z tego testu!' +
+                    '</div>';
+            } else {
+                var mistakesHtml = '';
+                for (var i = 0; i < mistakes.length; i++) {
+                    var m = mistakes[i];
+                    mistakesHtml += '<div class="mistake-item">' +
+                        '<div class="mistake-kanji">' + m.kanji + '</div>' +
+                        '<div class="mistake-info">' +
+                        '<div class="mistake-reading">' + m.reading + '</div>' +
+                        '<div class="mistake-meaning">' + m.meaning + '</div>' +
+                        '</div>' +
+                        '<a href="' + m.jishoUrl + '" target="_blank" class="jisho-link">📚 Jisho</a>' +
+                        '</div>';
+                }
+                mistakesList.innerHTML = mistakesHtml;
+            }
+            
+            document.getElementById('results').classList.add('show');
+            
+            // Scroll to results
+            var resultsEl = document.getElementById('results');
+            resultsEl.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function scrollToFirstMistake() {
+            var incorrectOption = document.querySelector('.option.incorrect');
+            if (incorrectOption) {
+                incorrectOption.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        function copyMistakesToClipboard() {
+            var mistakesList = [];
+            for (var idx = 0; idx < questions.length; idx++) {
+                if (answers[idx] !== questions[idx].correct) {
+                    mistakesList.push(questions[idx]);
+                }
+            }
+            
+            if (mistakesList.length === 0) {
+                alert('Nie ma błędów do skopiowania!');
+                return;
+            }
+            
+            var textParts = [];
+            for (var i = 0; i < mistakesList.length; i++) {
+                var q = mistakesList[i];
+                textParts.push(q.kanji + ' (' + q.reading + ') - ' + q.meaning + '\n' + q.jishoUrl);
+            }
+            var text = textParts.join('\n\n');
+            
+            // Try modern clipboard API first, then fallback
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('Lista błędów skopiowana do schowka!');
+                }).catch(function() {
+                    copyFallback(text);
+                });
+            } else {
+                copyFallback(text);
+            }
+        }
+        
+        function copyFallback(text) {
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('Lista błędów skopiowana do schowka!');
+            } catch (e) {
+                alert('Nie udało się skopiować. Skopiuj ręcznie.');
+            }
+            document.body.removeChild(textarea);
+        }
+        
+        function resetTest() {
+            var keys = Object.keys(answers);
+            for (var i = 0; i < keys.length; i++) {
+                delete answers[keys[i]];
+            }
+            
+            var options = document.querySelectorAll('.option');
+            for (var j = 0; j < options.length; j++) {
+                options[j].classList.remove('selected', 'correct', 'incorrect');
+            }
+            
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('score').classList.remove('perfect');
+            document.getElementById('progress').style.width = '0%';
+            
+            // Reset mistakes section
+            document.getElementById('mistakes-section').innerHTML = 
+                '<div class="mistakes-title">📖 Słówka do powtórki</div>' +
+                '<div class="mistakes-list" id="mistakes-list"></div>';
+            
+            window.scrollTo(0, 0);
+        }
+        
+        // Initialize when DOM is ready - multiple fallbacks for compatibility
+        function init() {
+            try {
+                renderQuestions();
+            } catch (e) {
+                // Show error in the questions container
+                var container = document.getElementById('questions');
+                if (container) {
+                    container.innerHTML = '<div style="padding:20px;color:red;">Error: ' + e.message + '</div>';
+                }
+                console.error('Error rendering questions:', e);
+            }
+        }
+        
+        // Try multiple initialization methods
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(init, 0);
+        } else {
+            document.addEventListener('DOMContentLoaded', init);
+        }
+        
+        // Fallback: also try on window load
+        window.onload = function() {
+            var container = document.getElementById('questions');
+            if (container && container.innerHTML.trim() === '') {
+                init();
+            }
+        };
+    </script>
+</body>
+</html>
+

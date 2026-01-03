@@ -1,0 +1,15 @@
+# Generated test files
+kanji_test.html
+test.html
+test*.html
+
+# Cache files
+.kanji_cache.json
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
