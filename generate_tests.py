@@ -18,6 +18,15 @@ import time
 FAKE_KANJI_CACHE_FILE = os.path.join(os.path.dirname(__file__), '.kanji_cache.json')
 FAKE_KANJI_POOL = []
 
+# Cache for Hanzi Writer available characters
+HANZI_WRITER_CACHE_FILE = os.path.join(os.path.dirname(__file__), '.hanzi_available.json')
+HANZI_WRITER_AVAILABLE = set()
+HANZI_WRITER_UNAVAILABLE = set()
+
+# Cache for verified kanji readings from Jisho API
+KANJI_READINGS_CACHE_FILE = os.path.join(os.path.dirname(__file__), '.kanji_readings.json')
+KANJI_READINGS_CACHE = {}  # kanji -> {'onyomi': [...], 'kunyomi': [...]}
+
 # Minimal fallback list if API is unavailable
 FALLBACK_KANJI_POOL = [
     ("食べる", "jeść"), ("飲む", "pić"), ("行く", "iść"), ("来る", "przyjść"),
@@ -87,6 +96,171 @@ def save_kanji_cache(kanji_list: List[tuple]):
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"   Warning: Could not save cache: {e}")
+
+
+def load_hanzi_cache() -> tuple:
+    """Load Hanzi Writer availability cache."""
+    global HANZI_WRITER_AVAILABLE, HANZI_WRITER_UNAVAILABLE
+    try:
+        if os.path.exists(HANZI_WRITER_CACHE_FILE):
+            with open(HANZI_WRITER_CACHE_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                HANZI_WRITER_AVAILABLE = set(data.get('available', []))
+                HANZI_WRITER_UNAVAILABLE = set(data.get('unavailable', []))
+                return HANZI_WRITER_AVAILABLE, HANZI_WRITER_UNAVAILABLE
+    except Exception:
+        pass
+    return set(), set()
+
+
+def save_hanzi_cache():
+    """Save Hanzi Writer availability cache."""
+    try:
+        data = {
+            'available': list(HANZI_WRITER_AVAILABLE),
+            'unavailable': list(HANZI_WRITER_UNAVAILABLE)
+        }
+        with open(HANZI_WRITER_CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def is_kanji_in_hanzi_writer(kanji: str) -> bool:
+    """
+    Check if a kanji character is available in the Hanzi Writer library.
+    Uses CDN to check: https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/{kanji}.json
+    Results are cached to avoid repeated requests.
+    """
+    global HANZI_WRITER_AVAILABLE, HANZI_WRITER_UNAVAILABLE
+    
+    # Load cache if empty
+    if not HANZI_WRITER_AVAILABLE and not HANZI_WRITER_UNAVAILABLE:
+        load_hanzi_cache()
+    
+    # Check cache first
+    if kanji in HANZI_WRITER_AVAILABLE:
+        return True
+    if kanji in HANZI_WRITER_UNAVAILABLE:
+        return False
+    
+    # Check via HTTP request
+    try:
+        url = f"https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/{urllib.parse.quote(kanji)}.json"
+        req = urllib.request.Request(url, method='HEAD')
+        req.add_header('User-Agent', 'Mozilla/5.0')
+        
+        with urllib.request.urlopen(req, timeout=3) as response:
+            if response.status == 200:
+                HANZI_WRITER_AVAILABLE.add(kanji)
+                save_hanzi_cache()
+                return True
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            HANZI_WRITER_UNAVAILABLE.add(kanji)
+            save_hanzi_cache()
+            return False
+    except Exception:
+        pass
+    
+    # If request fails, assume available (fail gracefully)
+    return True
+
+
+def load_readings_cache() -> dict:
+    """Load kanji readings cache from file."""
+    global KANJI_READINGS_CACHE
+    try:
+        if os.path.exists(KANJI_READINGS_CACHE_FILE):
+            with open(KANJI_READINGS_CACHE_FILE, 'r', encoding='utf-8') as f:
+                KANJI_READINGS_CACHE = json.load(f)
+                return KANJI_READINGS_CACHE
+    except Exception:
+        pass
+    return {}
+
+
+def save_readings_cache():
+    """Save kanji readings cache to file."""
+    try:
+        with open(KANJI_READINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(KANJI_READINGS_CACHE, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def fetch_kanji_readings(kanji: str) -> dict:
+    """
+    Fetch on'yomi and kun'yomi readings for a single kanji from KanjiAPI.dev.
+    Returns: {'onyomi': ['デン', ...], 'kunyomi': ['いなずま', ...]}
+    """
+    global KANJI_READINGS_CACHE
+    
+    # Load cache if empty
+    if not KANJI_READINGS_CACHE:
+        load_readings_cache()
+    
+    # Check cache first
+    if kanji in KANJI_READINGS_CACHE:
+        return KANJI_READINGS_CACHE[kanji]
+    
+    readings = {'onyomi': [], 'kunyomi': []}
+    
+    try:
+        # Use KanjiAPI.dev - dedicated kanji information API
+        url = f"https://kanjiapi.dev/v1/kanji/{urllib.parse.quote(kanji)}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'KanjiTestGenerator/1.0'})
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            
+            # Get on'yomi (katakana readings)
+            readings['onyomi'] = data.get('on_readings', [])
+            
+            # Get kun'yomi (hiragana readings)
+            readings['kunyomi'] = data.get('kun_readings', [])
+    
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            pass  # Kanji not found in database
+        else:
+            print(f"   ⚠️ Nie udało się pobrać czytań dla {kanji}: HTTP {e.code}")
+    except Exception as e:
+        print(f"   ⚠️ Nie udało się pobrać czytań dla {kanji}: {e}")
+    
+    # Cache the result (even if empty)
+    KANJI_READINGS_CACHE[kanji] = readings
+    save_readings_cache()
+    
+    return readings
+
+
+def get_verified_readings(kanji: str, all_entries: List['VocabEntry'] = None) -> List[str]:
+    """
+    Get verified readings for a kanji character.
+    First tries Jisho API, then falls back to local entries.
+    """
+    # Try API first
+    api_readings = fetch_kanji_readings(kanji)
+    verified = []
+    
+    # Combine on'yomi and kun'yomi
+    verified.extend(api_readings.get('onyomi', []))
+    verified.extend(api_readings.get('kunyomi', []))
+    
+    # If API returned results, use them
+    if verified:
+        return verified
+    
+    # Fallback to local entries (single-kanji words only)
+    if all_entries:
+        for e in all_entries:
+            if e.kanji == kanji:  # Exact match - single kanji
+                for reading in split_readings(e.reading):
+                    if reading not in verified:
+                        verified.append(reading)
+    
+    return verified
 
 
 def fetch_fake_kanji_pool(force_refresh: bool = False) -> List[tuple]:
@@ -739,8 +913,9 @@ def get_kanji_position_name(kanji_word: str, target_kanji: str) -> str:
     return 'pierwsze', 'first'
 
 
-def generate_draw_kanji_question(entry: VocabEntry, all_entries: List[VocabEntry]) -> dict:
-    """Generate a drawing quiz question: Write the kanji for this meaning."""
+def generate_draw_kanji_question(entry: VocabEntry, all_entries: List[VocabEntry]) -> Optional[dict]:
+    """Generate a drawing quiz question: Write the kanji for this meaning.
+    Returns None if the kanji is not available in Hanzi Writer library."""
     # Get the first kanji character
     target_kanji = None
     for c in entry.kanji:
@@ -751,19 +926,14 @@ def generate_draw_kanji_question(entry: VocabEntry, all_entries: List[VocabEntry
     if not target_kanji:
         target_kanji = entry.kanji[0]
     
-    # Count kanji in word
-    kanji_count = sum(1 for c in entry.kanji if '\u4e00' <= c <= '\u9fff')
+    # Check if kanji is available in Hanzi Writer
+    if not is_kanji_in_hanzi_writer(target_kanji):
+        return None  # Signal to use different question type
     
-    # Build question text
-    if kanji_count == 1:
-        # Single kanji - meaning applies directly
-        question_text = f'Zapisz kanji oznaczające: „{entry.meanings[0]}"'
-        question_en = f'Write the kanji meaning: "{entry.meanings[0]}"'
-    else:
-        # Kanji from compound - show position and meaning only
-        pos_pl, pos_en = get_kanji_position_name(entry.kanji, target_kanji)
-        question_text = f'Zapisz {pos_pl} kanji ze słowa „{entry.meanings[0]}"'
-        question_en = f'Write the {pos_en} kanji from "{entry.meanings[0]}"'
+    # Build question text - always ask for single kanji with meaning
+    meaning = entry.meanings[0] if entry.meanings else 'słowo'
+    question_text = f'Narysuj kanji 【{target_kanji}】 ({meaning})'
+    question_en = f'Draw kanji 【{target_kanji}】 ({meaning})'
     
     return {
         'type': 'draw_kanji',
@@ -777,8 +947,9 @@ def generate_draw_kanji_question(entry: VocabEntry, all_entries: List[VocabEntry
     }
 
 
-def generate_stroke_order_question(entry: VocabEntry, all_entries: List[VocabEntry]) -> dict:
-    """Generate a stroke order quiz: Write kanji with correct stroke order (3 attempts)."""
+def generate_stroke_order_question(entry: VocabEntry, all_entries: List[VocabEntry]) -> Optional[dict]:
+    """Generate a stroke order quiz: Write kanji with correct stroke order (3 attempts).
+    Returns None if the kanji is not available in Hanzi Writer library."""
     # Get the first kanji character
     target_kanji = None
     for c in entry.kanji:
@@ -789,19 +960,14 @@ def generate_stroke_order_question(entry: VocabEntry, all_entries: List[VocabEnt
     if not target_kanji:
         target_kanji = entry.kanji[0]
     
-    # Count kanji in word
-    kanji_count = sum(1 for c in entry.kanji if '\u4e00' <= c <= '\u9fff')
+    # Check if kanji is available in Hanzi Writer
+    if not is_kanji_in_hanzi_writer(target_kanji):
+        return None  # Signal to use different question type
     
-    # Build question text
-    if kanji_count == 1:
-        # Single kanji - meaning applies directly
-        question_text = f'Zapisz kanji „{entry.meanings[0]}" w poprawnej kolejności kresek'
-        question_en = f'Write "{entry.meanings[0]}" with correct stroke order'
-    else:
-        # Kanji from compound - show position and meaning only
-        pos_pl, pos_en = get_kanji_position_name(entry.kanji, target_kanji)
-        question_text = f'Zapisz {pos_pl} kanji ze słowa „{entry.meanings[0]}" (poprawna kolejność kresek)'
-        question_en = f'Write the {pos_en} kanji from "{entry.meanings[0]}" (correct stroke order)'
+    # Build question text - always ask for single kanji with meaning
+    meaning = entry.meanings[0] if entry.meanings else 'słowo'
+    question_text = f'Narysuj kanji 【{target_kanji}】 w poprawnej kolejności kresek ({meaning})'
+    question_en = f'Draw kanji 【{target_kanji}】 with correct stroke order ({meaning})'
     
     return {
         'type': 'stroke_order',
@@ -830,8 +996,8 @@ def generate_bomb_defuse_question(entry: VocabEntry, all_entries: List[VocabEntr
     max_pairs = min(5, len(all_entries))
     num_pairs = random.randint(2, max_pairs)
     
-    # Calculate time: 2 seconds per pair + 4 bonus seconds
-    time_limit = num_pairs * 2 + 4
+    # Calculate time: 2 seconds per pair + 8 bonus seconds
+    time_limit = num_pairs * 2 + 8
     
     # Always include the main entry
     selected_entries = [entry]
@@ -909,22 +1075,79 @@ def generate_runner_game_question(entry: VocabEntry, all_entries: List[VocabEntr
     
     # Build checkpoints with Polish question and 3 Japanese options
     checkpoints = []
+    pool = get_fake_kanji_pool()
+    
     for e in selected_entries:
         meaning = e.meanings[0] if e.meanings else 'słowo'
         correct_kanji = e.kanji
+        correct_len = len(correct_kanji)
         
-        # Generate 2 fake options with same length
-        fake_answers = get_fake_answers_kanji(e, all_entries, 2)
-        fake_options = [f[0] for f in fake_answers]  # Extract just the kanji strings
+        # Generate fake options with EXACTLY the same string length
+        fake_options = []
         
-        # Add distractor: reversed kanji if length > 1
-        if len(correct_kanji) > 1:
+        # First, try from other entries with same length
+        same_len_entries = [x for x in all_entries 
+                           if len(x.kanji) == correct_len and x.kanji != correct_kanji]
+        random.shuffle(same_len_entries)
+        for x in same_len_entries:
+            if x.kanji not in fake_options:
+                fake_options.append(x.kanji)
+            if len(fake_options) >= 2:
+                break
+        
+        # Then try from the fake kanji pool with same length
+        if len(fake_options) < 2:
+            same_len_pool = [k for k, m in pool if len(k) == correct_len and k != correct_kanji]
+            random.shuffle(same_len_pool)
+            for k in same_len_pool:
+                if k not in fake_options:
+                    fake_options.append(k)
+                if len(fake_options) >= 2:
+                    break
+        
+        # If still not enough, try entries/pool with ±1 length difference
+        if len(fake_options) < 2:
+            close_len_entries = [x for x in all_entries 
+                                if abs(len(x.kanji) - correct_len) == 1 and x.kanji != correct_kanji]
+            random.shuffle(close_len_entries)
+            for x in close_len_entries:
+                if x.kanji not in fake_options:
+                    fake_options.append(x.kanji)
+                if len(fake_options) >= 2:
+                    break
+        
+        # Last resort: pad shorter options or truncate longer ones to match length
+        if len(fake_options) < 2:
+            any_entries = [x for x in all_entries if x.kanji != correct_kanji]
+            random.shuffle(any_entries)
+            for x in any_entries:
+                if x.kanji not in fake_options:
+                    # Adjust length to match
+                    adjusted = x.kanji
+                    if len(adjusted) < correct_len:
+                        # Pad with common kanji
+                        adjusted = adjusted + "々" * (correct_len - len(adjusted))
+                    elif len(adjusted) > correct_len:
+                        adjusted = adjusted[:correct_len]
+                    if adjusted not in fake_options and adjusted != correct_kanji:
+                        fake_options.append(adjusted)
+                if len(fake_options) >= 2:
+                    break
+        
+        # Absolute fallback
+        while len(fake_options) < 2:
+            fallback = "？" * correct_len
+            if fallback not in fake_options:
+                fake_options.append(fallback)
+        
+        # Add reversed kanji distractor rarely (20% chance) if length > 1
+        if len(correct_kanji) > 1 and random.random() < 0.2:
             reversed_kanji = correct_kanji[::-1]
-            if reversed_kanji != correct_kanji and reversed_kanji not in fake_options:
-                fake_options[0] = reversed_kanji
+            if reversed_kanji != correct_kanji and len(reversed_kanji) == correct_len:
+                fake_options[random.randint(0, 1)] = reversed_kanji
         
-        # Combine and shuffle options
-        all_options = [correct_kanji] + fake_options
+        # Combine and shuffle options - ensure all have same length
+        all_options = [correct_kanji] + fake_options[:2]
         random.shuffle(all_options)
         correct_idx = all_options.index(correct_kanji)
         
@@ -963,20 +1186,16 @@ def generate_all_readings_question(entry: VocabEntry, all_entries: List[VocabEnt
     if not target_kanji:
         target_kanji = entry.kanji[0]
     
-    # Find all entries that contain this kanji and collect individual readings
-    correct_readings = set()
-    for e in all_entries:
-        if target_kanji in e.kanji:
-            # Split readings by comma and add each one
-            for reading in split_readings(e.reading):
-                correct_readings.add(reading)
+    # Get VERIFIED readings from Jisho API (on'yomi + kun'yomi)
+    verified_readings = get_verified_readings(target_kanji, all_entries)
     
-    # If only one reading found, add the current entry's readings
-    if len(correct_readings) < 2:
-        for reading in split_readings(entry.reading):
-            correct_readings.add(reading)
+    # Use verified readings as correct answers
+    correct_readings = list(set(verified_readings))[:6]  # Max 6 correct readings
     
-    correct_readings = list(correct_readings)[:6]  # Max 6 correct readings
+    # If no verified readings found, skip this question type
+    if len(correct_readings) < 1:
+        # Fallback: return a different question type
+        return generate_kanji_to_polish_question(entry, all_entries)
     
     # Generate fake readings (at least 2x the correct ones)
     num_fake = max(8, len(correct_readings) * 2)
@@ -1037,10 +1256,41 @@ def generate_test(entries: List[VocabEntry], num_questions: int = 20,
         'runner_game': generate_runner_game_question,
     }
     
+    # Fallback question types that always work (no Hanzi Writer dependency)
+    fallback_types = ['kanji_to_polish', 'polish_to_kanji', 'reading', 'scramble', 'bomb_defuse']
+    
+    # Pre-check Hanzi Writer availability if those types are requested
+    hanzi_types = {'draw_kanji', 'stroke_order'}
+    if hanzi_types & set(question_types):
+        print("🔍 Sprawdzanie dostępności znaków w Hanzi Writer...")
+        unavailable_count = 0
+        for entry in entries[:20]:  # Check sample
+            target = None
+            for c in entry.kanji:
+                if '\u4e00' <= c <= '\u9fff':
+                    target = c
+                    break
+            if target and not is_kanji_in_hanzi_writer(target):
+                unavailable_count += 1
+        if unavailable_count > 0:
+            print(f"   ⚠️ Niektóre znaki niedostępne - zostaną zastąpione innymi pytaniami")
+    
     for entry in selected_entries:
         q_type = random.choice(question_types)
         question = generators[q_type](entry, entries)
-        questions.append(question)
+        
+        # If question is None (e.g., kanji not in Hanzi Writer), try fallback
+        if question is None:
+            print(f"   ⚠️ Znak niedostępny dla {q_type}, zamieniam na inny typ pytania")
+            # Try a fallback type
+            for fallback in fallback_types:
+                if fallback in generators:
+                    question = generators[fallback](entry, entries)
+                    if question is not None:
+                        break
+        
+        if question is not None:
+            questions.append(question)
     
     return questions
 

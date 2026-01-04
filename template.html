@@ -1979,7 +1979,7 @@
             var answerBox = document.getElementById('draw-answer-' + qIdx);
             if (answerBox) {
                 try {
-                    drawQuizState[qIdx].writer = HanziWriter.create(answerBox, targetKanji, {
+                    var writer = HanziWriter.create(answerBox, targetKanji, {
                         width: 200,
                         height: 200,
                         padding: 10,
@@ -1990,8 +1990,20 @@
                         strokeAnimationSpeed: 1,
                         delayBetweenStrokes: 300
                     });
+                    drawQuizState[qIdx].writer = writer;
+                    
+                    // Check if character data is available
+                    writer.getCharacterData().then(function(data) {
+                        // Character data loaded successfully
+                    }).catch(function(err) {
+                        console.log('Character data not available for draw:', targetKanji);
+                        drawQuizState[qIdx].unavailable = true;
+                        answerBox.innerHTML = '<div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;text-align:center;color:#999;font-size:3rem;">' + targetKanji + '</div>';
+                        showDrawFeedback(qIdx, '⚠️ Animacja niedostępna dla tego znaku. Możesz nadal rysować i samoocenić.', 'hint');
+                    });
                 } catch (e) {
                     console.log('Hanzi Writer error:', e);
+                    drawQuizState[qIdx].unavailable = true;
                 }
             }
         }
@@ -2185,6 +2197,13 @@
                         strokeQuizState[qIdx].totalStrokes = data.strokes.length;
                         updateStrokeStats(qIdx);
                     }
+                }).catch(function(err) {
+                    console.log('Character data not available for:', targetKanji);
+                    box.innerHTML = '<div style="padding:40px;text-align:center;color:#999;">' +
+                        '<div style="font-size:3rem;margin-bottom:0.5rem;">' + targetKanji + '</div>' +
+                        '<div>⚠️ Dane dla tego znaku nie są dostępne w bibliotece.</div>' +
+                        '<div style="margin-top:0.5rem;font-size:0.9rem;">Zadanie zostanie pominięte przy sprawdzaniu.</div></div>';
+                    strokeQuizState[qIdx].unavailable = true;
                 });
                 
                 writer.quiz({
@@ -3275,6 +3294,12 @@
                     // Check stroke order quiz
                     var state = strokeQuizState[idx];
                     var answer = answers[idx];
+                    
+                    // Skip unavailable characters
+                    if (state && state.unavailable) {
+                        // Don't count this question - character not in library
+                        continue;
+                    }
                     
                     if (answer && answer.complete) {
                         correct++;
