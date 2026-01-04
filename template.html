@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>%%TITLE%%</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Hanzi Writer for kanji stroke animation -->
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
     <style>
         :root {
             --ink-black: #1a1a1a;
@@ -73,6 +75,23 @@
         .question-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 25px var(--soft-shadow);
+        }
+        
+        .question-card.unanswered {
+            border-left-color: var(--accent-vermillion);
+            background: rgba(230, 57, 70, 0.03);
+        }
+        
+        .question-card.unanswered::after {
+            content: '⚠️ Brak odpowiedzi';
+            display: block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--accent-vermillion);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
         }
         
         .question-number {
@@ -157,6 +176,51 @@
             background: var(--accent-vermillion);
         }
         
+        /* Multi-select styles */
+        .option.multi-select {
+            position: relative;
+        }
+        
+        .option-checkbox {
+            font-family: 'Noto Sans JP', sans-serif;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--paper-cream);
+            border: 2px solid var(--accent-indigo);
+            border-radius: 4px;
+            margin-right: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-indigo);
+        }
+        
+        .option.multi-select.selected .option-checkbox {
+            background: var(--accent-indigo);
+            color: white;
+        }
+        
+        .option.multi-select.correct .option-checkbox {
+            background: #2e7d32;
+            border-color: #2e7d32;
+            color: white;
+        }
+        
+        .option.multi-select.incorrect .option-checkbox {
+            background: var(--accent-vermillion);
+            border-color: var(--accent-vermillion);
+            color: white;
+        }
+        
+        .multi-select-hint {
+            font-size: 0.9rem;
+            color: var(--accent-indigo);
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        
         .option-text {
             font-size: 1.1rem;
             color: var(--ink-black);
@@ -183,12 +247,77 @@
             background: var(--accent-vermillion);
             color: white;
             box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+            position: relative;
         }
         
         .submit-btn:hover {
             background: #c1121f;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .submit-btn .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        
+        .submit-btn.loading .spinner {
+            display: inline-block;
+        }
+        
+        .submit-btn.loading .btn-text {
+            opacity: 0.8;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(245, 240, 230, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--paper-cream);
+            border-top-color: var(--accent-vermillion);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .loading-text {
+            margin-top: 1.5rem;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.2rem;
+            color: var(--accent-indigo);
         }
         
         .reset-btn {
@@ -429,6 +558,1231 @@
             margin-bottom: 0.25rem;
         }
         
+        /* Scramble question styles */
+        .scramble-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .scramble-answer {
+            min-height: 60px;
+            padding: 0.75rem;
+            background: white;
+            border: 2px dashed var(--gold-highlight);
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .scramble-answer.has-content {
+            border-style: solid;
+        }
+        
+        .scramble-answer.correct {
+            border-color: #2e7d32;
+            background: rgba(46, 125, 50, 0.1);
+        }
+        
+        .scramble-answer.incorrect {
+            border-color: var(--accent-vermillion);
+            background: rgba(230, 57, 70, 0.1);
+        }
+        
+        .scramble-tiles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+        
+        .scramble-tile {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-indigo);
+            color: white;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .scramble-tile:hover {
+            transform: scale(1.1);
+            background: #1e3046;
+        }
+        
+        .scramble-tile.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .scramble-tile.in-answer {
+            background: var(--gold-highlight);
+            cursor: pointer;
+        }
+        
+        .scramble-tile.in-answer:hover {
+            background: #c4956a;
+        }
+        
+        .scramble-hint {
+            font-size: 0.85rem;
+            color: var(--accent-indigo);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        
+        .scramble-clear {
+            padding: 0.5rem 1rem;
+            background: var(--paper-cream);
+            border: 1px solid var(--gold-highlight);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            align-self: center;
+        }
+        
+        .scramble-clear:hover {
+            background: #faf6ef;
+        }
+        
+        .scramble-result {
+            text-align: center;
+            padding: 0.5rem;
+            font-weight: 600;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        
+        .scramble-result.show {
+            display: block;
+        }
+        
+        .scramble-result.correct {
+            background: rgba(46, 125, 50, 0.1);
+            color: #2e7d32;
+        }
+        
+        .scramble-result.incorrect {
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--accent-vermillion);
+        }
+        
+        /* Kanji stroke animation styles */
+        .kanji-animation-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--paper-cream);
+            border-radius: 8px;
+            border: 2px solid var(--gold-highlight);
+        }
+        
+        .kanji-animation-container.show {
+            display: flex;
+        }
+        
+        .kanji-animation-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            color: var(--accent-indigo);
+            margin-bottom: 0.5rem;
+        }
+        
+        .kanji-animation-box {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px var(--soft-shadow);
+        }
+        
+        .kanji-animation-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .kanji-animation-controls button {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            background: var(--accent-indigo);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .kanji-animation-controls button:hover {
+            background: #1e3046;
+        }
+        
+        /* Drawing quiz styles */
+        .draw-quiz-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: var(--paper-cream);
+            border-radius: 8px;
+        }
+        
+        .draw-area {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        
+        .draw-canvas-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .draw-canvas-label {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.85rem;
+            color: var(--accent-indigo);
+            margin-bottom: 0.5rem;
+        }
+        
+        .draw-canvas {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px var(--soft-shadow);
+            border: 2px solid var(--gold-highlight);
+            cursor: crosshair;
+            touch-action: none;
+        }
+        
+        .draw-canvas.correct {
+            border-color: #2e7d32;
+        }
+        
+        .draw-canvas.incorrect {
+            border-color: var(--accent-vermillion);
+        }
+        
+        .draw-answer-box {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .draw-answer-box.show {
+            display: flex;
+        }
+        
+        .draw-answer-wrapper {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px var(--soft-shadow);
+            border: 2px solid #2e7d32;
+        }
+        
+        .draw-feedback {
+            margin-top: 0.75rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+            min-height: 2rem;
+        }
+        
+        .draw-feedback.error {
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--accent-vermillion);
+        }
+        
+        .draw-feedback.success {
+            background: rgba(46, 125, 50, 0.1);
+            color: #2e7d32;
+        }
+        
+        .draw-feedback.hint {
+            background: rgba(212, 165, 116, 0.2);
+            color: var(--accent-indigo);
+        }
+        
+        .draw-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .draw-controls button {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .draw-controls .check-btn {
+            background: var(--accent-vermillion);
+            color: white;
+        }
+        
+        .draw-controls .clear-btn {
+            background: var(--paper-cream);
+            color: var(--ink-black);
+            border: 1px solid #ddd;
+        }
+        
+        .draw-controls .replay-btn {
+            background: var(--accent-indigo);
+            color: white;
+        }
+        
+        .draw-self-check {
+            display: none;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .draw-self-check.show {
+            display: flex;
+        }
+        
+        .draw-self-check-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            color: var(--accent-indigo);
+        }
+        
+        .draw-self-check-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+        
+        .draw-self-check-buttons button {
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .draw-self-check-buttons .correct-btn {
+            background: #2e7d32;
+            color: white;
+        }
+        
+        .draw-self-check-buttons .incorrect-btn {
+            background: var(--accent-vermillion);
+            color: white;
+        }
+        
+        /* Stroke order quiz styles */
+        .stroke-quiz-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: var(--paper-cream);
+            border-radius: 8px;
+        }
+        
+        .stroke-quiz-box {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px var(--soft-shadow);
+            border: 2px solid var(--gold-highlight);
+            cursor: crosshair;
+        }
+        
+        .stroke-quiz-box.complete {
+            border-color: #2e7d32;
+            box-shadow: 0 0 20px rgba(46, 125, 50, 0.3);
+        }
+        
+        .stroke-quiz-box.locked {
+            border-color: var(--accent-vermillion);
+            opacity: 0.8;
+        }
+        
+        .stroke-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .stroke-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 1px 4px var(--soft-shadow);
+        }
+        
+        .stroke-stat.strokes {
+            color: var(--accent-indigo);
+        }
+        
+        .stroke-stat.strokes.complete {
+            color: #2e7d32;
+            background: rgba(46, 125, 50, 0.1);
+        }
+        
+        .stroke-stat.attempts {
+            color: #2e7d32;
+        }
+        
+        .stroke-stat.attempts.danger {
+            color: var(--accent-vermillion);
+            background: rgba(230, 57, 70, 0.1);
+        }
+        
+        .stroke-feedback {
+            margin-top: 0.75rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+            min-height: 2rem;
+        }
+        
+        .stroke-feedback.error {
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--accent-vermillion);
+        }
+        
+        .stroke-feedback.success {
+            background: rgba(46, 125, 50, 0.1);
+            color: #2e7d32;
+        }
+        
+        .stroke-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .stroke-controls button {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            background: var(--accent-indigo);
+            color: white;
+        }
+        
+        /* Bomb Defuse Game Styles */
+        .bomb-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bomb-start-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .bomb-start-screen.hidden {
+            display: none;
+        }
+        
+        .bomb-emoji {
+            font-size: 4rem;
+            animation: bomb-pulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes bomb-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .bomb-start-btn {
+            margin-top: 1rem;
+            padding: 1rem 2.5rem;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #e63946 0%, #c1121f 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Noto Sans JP', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .bomb-start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 57, 70, 0.5);
+        }
+        
+        .bomb-game {
+            display: none;
+            width: 100%;
+        }
+        
+        .bomb-game.active {
+            display: block;
+        }
+        
+        .bomb-timer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: #0f0f23;
+            border-radius: 8px;
+            border: 2px solid #e63946;
+            font-family: 'Courier New', monospace;
+            font-size: 2rem;
+            color: #e63946;
+            text-shadow: 0 0 10px rgba(230, 57, 70, 0.5);
+        }
+        
+        .bomb-timer.warning {
+            animation: timer-flash 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes timer-flash {
+            0%, 100% { background: #0f0f23; }
+            50% { background: #3d0a0a; }
+        }
+        
+        .bomb-wires-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            gap: 2rem;
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+        }
+        
+        .bomb-column {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            flex: 1;
+        }
+        
+        .bomb-column-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.85rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .bomb-item {
+            padding: 0.75rem 1rem;
+            background: #1e1e3f;
+            border: 2px solid #444;
+            border-radius: 8px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .bomb-item:hover {
+            border-color: #666;
+            background: #2a2a4f;
+        }
+        
+        .bomb-item.selected {
+            border-color: #ffd700;
+            background: #2a2a1f;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .bomb-item.correct {
+            border-color: #2e7d32;
+            background: #1a3d1a;
+            box-shadow: 0 0 15px rgba(46, 125, 50, 0.3);
+        }
+        
+        .bomb-item.wrong {
+            border-color: #e63946;
+            background: #3d1a1a;
+            box-shadow: 0 0 15px rgba(230, 57, 70, 0.3);
+        }
+        
+        .bomb-item.matched {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .bomb-wire {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        
+        .wire-red { background: #e63946; }
+        .wire-blue { background: #4361ee; }
+        .wire-green { background: #2e7d32; }
+        .wire-yellow { background: #ffd700; }
+        
+        .bomb-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .bomb-kanji-text {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .bomb-meaning {
+            font-size: 0.85rem;
+            color: #aaa;
+            font-style: italic;
+        }
+        
+        .bomb-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-family: 'Noto Sans JP', sans-serif;
+            display: none;
+        }
+        
+        .bomb-result.show {
+            display: block;
+        }
+        
+        .bomb-result.success {
+            background: rgba(46, 125, 50, 0.2);
+            color: #4caf50;
+            border: 1px solid #2e7d32;
+        }
+        
+        .bomb-result.failed {
+            background: rgba(230, 57, 70, 0.2);
+            color: #e63946;
+            border: 1px solid #e63946;
+        }
+        
+        /* Explosion overlay */
+        .explosion-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, #ff6b35 0%, #e63946 30%, #1a1a1a 70%);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            animation: explosion-anim 0.5s ease-out;
+        }
+        
+        .explosion-overlay.show {
+            display: flex;
+        }
+        
+        @keyframes explosion-anim {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .explosion-text {
+            font-size: 5rem;
+            color: white;
+            text-shadow: 0 0 30px #ff6b35, 0 0 60px #e63946;
+            animation: shake 0.3s ease-in-out infinite;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .explosion-message {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.5rem;
+            color: white;
+            margin-top: 1rem;
+        }
+        
+        .explosion-close {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: white;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        /* Runner Game styles */
+        .runner-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .runner-start-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .runner-start-screen.hidden {
+            display: none;
+        }
+        
+        .runner-emoji {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .runner-preview-sprite {
+            width: 48px;
+            height: 48px;
+            background-size: 144px 48px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        .runner-preview-player {
+            background-image: url('sprites/runner_spritesheet_64x64x3.png');
+            animation: runner-sprite-anim 0.3s steps(1) infinite;
+        }
+        
+        .runner-preview-gorilla {
+            background-image: url('sprites/gorilla_spritesheet_64x64x3.png');
+            animation: gorilla-sprite-anim 0.35s steps(1) infinite;
+        }
+        
+        .runner-preview-arrow {
+            font-size: 2rem;
+            color: var(--accent-vermillion);
+            animation: arrow-chase 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes arrow-chase {
+            0%, 100% { transform: translateX(-5px); opacity: 0.7; }
+            50% { transform: translateX(5px); opacity: 1; }
+        }
+        
+        @keyframes runner-bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+        
+        .runner-start-btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, #4CAF50, #2e7d32);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Noto Sans JP', sans-serif;
+            box-shadow: 0 4px 15px rgba(46, 125, 50, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .runner-start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.5);
+        }
+        
+        .runner-controls-info {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .runner-controls-info kbd {
+            background: #eee;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-family: monospace;
+        }
+        
+        .runner-game-canvas {
+            display: none;
+            width: 100%;
+            height: 480px;
+            border-radius: 12px;
+            background: #2d5a27;
+            border: 3px solid var(--gold-highlight);
+            position: relative;
+            overflow: hidden;
+            outline: none;
+        }
+        
+        .runner-game-canvas.active {
+            display: block;
+        }
+        
+        /* Top-down road with 3 lanes */
+        .runner-road {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 100%;
+            background: #4a4a4a;
+            border-left: 4px solid #ffd700;
+            border-right: 4px solid #ffd700;
+        }
+        
+        .runner-road::before,
+        .runner-road::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 3px;
+            height: 200%;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(255,255,255,0.5) 0px,
+                rgba(255,255,255,0.5) 15px,
+                transparent 15px,
+                transparent 30px
+            );
+            animation: road-scroll 0.4s linear infinite;
+        }
+        
+        .runner-road::before {
+            left: 33%;
+        }
+        
+        .runner-road::after {
+            left: 66%;
+        }
+        
+        .runner-road-lines {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 200%;
+            background: repeating-linear-gradient(
+                to bottom,
+                #fff 0px,
+                #fff 20px,
+                transparent 20px,
+                transparent 40px
+            );
+            animation: road-scroll 0.4s linear infinite;
+            display: none; /* Hidden - using lane dividers instead */
+        }
+        
+        @keyframes road-scroll {
+            from { transform: translateY(-50%); }
+            to { transform: translateY(0%); }
+        }
+        
+        .runner-lane-labels {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 60px;
+            z-index: 5;
+            opacity: 0.6;
+        }
+        
+        .runner-lane-label {
+            font-size: 1.5rem;
+            color: #ffd700;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+        
+        /* Fork in the road */
+        .runner-fork {
+            position: absolute;
+            top: -80px;
+            left: 0;
+            right: 0;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 15;
+            transition: top 0.05s linear;
+        }
+        
+        .runner-fork.active {
+            animation: none;
+        }
+        
+        .runner-fork-path {
+            width: 95px;
+            height: 100%;
+            background: linear-gradient(180deg, #5a5a5a 0%, #4a4a4a 100%);
+            border: 3px solid #ffd700;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 8px;
+            cursor: default;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .runner-fork-path.correct {
+            background: linear-gradient(180deg, #4CAF50 0%, #2e7d32 100%);
+            border-color: #8BC34A;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+        }
+        
+        .runner-fork-path.incorrect {
+            background: linear-gradient(180deg, #e63946 0%, #c62828 100%);
+            border-color: #ff6b6b;
+            box-shadow: 0 0 20px rgba(230, 57, 70, 0.6);
+        }
+        
+        .runner-fork-label {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        
+        .runner-fork-arrow {
+            font-size: 1.5rem;
+            margin-top: 5px;
+        }
+        
+        .runner-question-banner {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.1rem;
+            z-index: 20;
+            white-space: nowrap;
+        }
+        
+        /* Top-down player sprite */
+        .runner-player {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            background-image: url('sprites/runner_spritesheet_64x64x3.png');
+            background-size: 144px 48px;
+            background-position: 0 0;
+            z-index: 10;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.5));
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            transition: left 0.1s ease-out;
+        }
+        
+        .runner-player.running {
+            animation: runner-sprite-anim 0.25s steps(1) infinite;
+        }
+        
+        @keyframes runner-sprite-anim {
+            0% { background-position: 0 0; }
+            33.33% { background-position: -48px 0; }
+            66.66% { background-position: -96px 0; }
+            100% { background-position: 0 0; }
+        }
+        
+        .runner-player.crashed {
+            animation: crash-anim 0.5s ease-out forwards;
+        }
+        
+        @keyframes crash-anim {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(0); opacity: 0; }
+        }
+        
+        .runner-player.eaten {
+            animation: eaten-anim 0.5s ease-out forwards;
+        }
+        
+        @keyframes eaten-anim {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.5); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        /* Top-down gorilla */
+        .runner-gorilla {
+            position: absolute;
+            width: 56px;
+            height: 56px;
+            background-image: url('sprites/gorilla_spritesheet_64x64x3.png');
+            background-size: 168px 56px;
+            background-position: 0 0;
+            z-index: 9;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.6));
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            animation: gorilla-sprite-anim 0.3s steps(1) infinite;
+        }
+        
+        @keyframes gorilla-sprite-anim {
+            0% { background-position: 0 0; }
+            33.33% { background-position: -56px 0; }
+            66.66% { background-position: -112px 0; }
+            100% { background-position: 0 0; }
+        }
+        
+        .runner-gorilla.catching {
+            animation: gorilla-sprite-anim 0.2s steps(1) infinite, gorilla-rage 0.1s ease-in-out infinite;
+        }
+        
+        @keyframes gorilla-rage {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .runner-timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.2rem;
+            z-index: 20;
+        }
+        
+        .runner-timer.warning {
+            background: rgba(230, 57, 70, 0.9);
+            animation: timer-pulse 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes timer-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .runner-progress {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            z-index: 20;
+        }
+        
+        .runner-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s ease;
+        }
+        
+        .runner-distance {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #ff6b6b;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            z-index: 20;
+        }
+        
+        .runner-score {
+            position: absolute;
+            top: 45px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #4CAF50;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            z-index: 20;
+        }
+        
+        .runner-controls-hint {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            z-index: 20;
+        }
+        
+        .runner-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-family: 'Noto Sans JP', sans-serif;
+            display: none;
+        }
+        
+        .runner-result.show {
+            display: block;
+        }
+        
+        .runner-result.success {
+            background: rgba(46, 125, 50, 0.2);
+            color: #2e7d32;
+            border: 1px solid #2e7d32;
+        }
+        
+        .runner-result.failed {
+            background: rgba(230, 57, 70, 0.2);
+            color: #e63946;
+            border: 1px solid #e63946;
+        }
+        
+        .runner-controls-hint {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            z-index: 20;
+        }
+        
+        /* Eaten/fallen overlay */
+        .runner-game-over {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 30;
+            border-radius: 12px;
+        }
+        
+        .runner-game-over.show {
+            display: flex;
+        }
+        
+        .runner-game-over-text {
+            font-size: 2.5rem;
+            color: #e63946;
+            text-shadow: 0 0 20px #e63946;
+            animation: shake 0.3s ease-in-out infinite;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        
+        .runner-game-over-emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Success overlay */
+        .runner-success {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(46, 125, 50, 0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 30;
+            border-radius: 12px;
+        }
+        
+        .runner-success.show {
+            display: flex;
+        }
+        
+        .runner-success-text {
+            font-size: 2rem;
+            color: white;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        
+        .runner-success-emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: success-bounce 0.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes success-bounce {
+            from { transform: scale(1) rotate(-5deg); }
+            to { transform: scale(1.1) rotate(5deg); }
+        }
+        
         @media (max-width: 600px) {
             body { padding: 1rem; }
             h1 { font-size: 1.8rem; }
@@ -449,6 +1803,11 @@
             }
             .jisho-link {
                 margin-top: 0.75rem;
+            }
+            .scramble-tile {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
             }
         }
     </style>
@@ -474,8 +1833,24 @@
         </div>
         
         <div class="submit-section">
-            <button class="submit-btn" onclick="checkAnswers()">答えを確認 — Sprawdź</button>
+            <button class="submit-btn" id="submit-btn" onclick="startCheckAnswers()">
+                <span class="spinner"></span>
+                <span class="btn-text">答えを確認 — Sprawdź</span>
+            </button>
             <button class="reset-btn" onclick="resetTest()">もう一度 — Od nowa</button>
+        </div>
+        
+        <!-- Loading overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Sprawdzam odpowiedzi...</div>
+        </div>
+        
+        <!-- Explosion overlay -->
+        <div class="explosion-overlay" id="explosion-overlay">
+            <div class="explosion-text">💥 BOOM! 💥</div>
+            <div class="explosion-message">Bomba wybuchła!</div>
+            <button class="explosion-close" onclick="closeExplosion()">Zamknij</button>
         </div>
         
         <div class="results" id="results">
@@ -522,8 +1897,938 @@
             'polish_to_kanji': 'PL→日 Przetłumacz na japoński',
             'reading': '読み方 Wybierz poprawne czytanie',
             'reading_to_kanji': '音→字 Które kanji ma to czytanie?',
-            'kanji_compound': '熟語 Znaczenie złożenia kanji'
+            'kanji_compound': '熟語 Znaczenie złożenia kanji',
+            'scramble': '🧩 Ułóż słowo z rozsypanki',
+            'reading_scramble': '🔤 Ułóż czytanie z kany',
+            'all_readings': '📚 Zaznacz wszystkie czytania',
+            'draw_kanji': '🖌️ Narysuj kanji (wolne)',
+            'stroke_order': '📝 Kolejność kresek (3 próby)',
+            'bomb_defuse': '💣 Rozbrój bombę!',
+            'runner_game': '🦍 Uciekaj przed gorylem!'
         };
+        
+        // Store scramble answers separately
+        var scrambleAnswers = {};
+        
+        // Store multi-select answers separately
+        var multiSelectAnswers = {};
+        
+        // Store Hanzi Writer instances for animations
+        var kanjiWriters = {};
+        
+        // Store drawing quiz state
+        var drawQuizState = {};
+        
+        function initDrawQuiz(qIdx, kanji) {
+            // Get the first kanji character
+            var targetKanji = null;
+            for (var i = 0; i < kanji.length; i++) {
+                var c = kanji.charCodeAt(i);
+                if (c >= 0x4e00 && c <= 0x9fff) {
+                    targetKanji = kanji[i];
+                    break;
+                }
+            }
+            
+            if (!targetKanji) return;
+            
+            var canvas = document.getElementById('draw-canvas-' + qIdx);
+            if (!canvas) return;
+            
+            var ctx = canvas.getContext('2d');
+            
+            // Initialize state
+            drawQuizState[qIdx] = {
+                kanji: targetKanji,
+                canvas: canvas,
+                ctx: ctx,
+                drawing: false,
+                hasDrawn: false,
+                checked: false,
+                selfMarked: null,
+                writer: null
+            };
+            
+            // Set up canvas for drawing
+            ctx.strokeStyle = '#2d4059';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Mouse events
+            canvas.addEventListener('mousedown', function(e) { startDrawing(qIdx, e); });
+            canvas.addEventListener('mousemove', function(e) { draw(qIdx, e); });
+            canvas.addEventListener('mouseup', function(e) { stopDrawing(qIdx); });
+            canvas.addEventListener('mouseout', function(e) { stopDrawing(qIdx); });
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', function(e) { 
+                e.preventDefault();
+                startDrawing(qIdx, e.touches[0]); 
+            });
+            canvas.addEventListener('touchmove', function(e) { 
+                e.preventDefault();
+                draw(qIdx, e.touches[0]); 
+            });
+            canvas.addEventListener('touchend', function(e) { 
+                e.preventDefault();
+                stopDrawing(qIdx); 
+            });
+            
+            // Create Hanzi Writer for showing answer (hidden initially)
+            var answerBox = document.getElementById('draw-answer-' + qIdx);
+            if (answerBox) {
+                try {
+                    drawQuizState[qIdx].writer = HanziWriter.create(answerBox, targetKanji, {
+                        width: 200,
+                        height: 200,
+                        padding: 10,
+                        showOutline: true,
+                        showCharacter: false,
+                        strokeColor: '#2e7d32',
+                        outlineColor: '#ddd',
+                        strokeAnimationSpeed: 1,
+                        delayBetweenStrokes: 300
+                    });
+                } catch (e) {
+                    console.log('Hanzi Writer error:', e);
+                }
+            }
+        }
+        
+        function getCanvasCoords(qIdx, e) {
+            var state = drawQuizState[qIdx];
+            var rect = state.canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (state.canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (state.canvas.height / rect.height)
+            };
+        }
+        
+        function startDrawing(qIdx, e) {
+            var state = drawQuizState[qIdx];
+            if (!state || state.checked) return;
+            
+            state.drawing = true;
+            state.hasDrawn = true;
+            var coords = getCanvasCoords(qIdx, e);
+            state.ctx.beginPath();
+            state.ctx.moveTo(coords.x, coords.y);
+        }
+        
+        function draw(qIdx, e) {
+            var state = drawQuizState[qIdx];
+            if (!state || !state.drawing) return;
+            
+            var coords = getCanvasCoords(qIdx, e);
+            state.ctx.lineTo(coords.x, coords.y);
+            state.ctx.stroke();
+        }
+        
+        function stopDrawing(qIdx) {
+            var state = drawQuizState[qIdx];
+            if (!state) return;
+            state.drawing = false;
+        }
+        
+        function showDrawFeedback(qIdx, message, type) {
+            var feedbackEl = document.getElementById('draw-feedback-' + qIdx);
+            if (!feedbackEl) return;
+            
+            feedbackEl.className = 'draw-feedback ' + type;
+            feedbackEl.textContent = message;
+        }
+        
+        function checkDrawing(qIdx) {
+            var state = drawQuizState[qIdx];
+            if (!state) return;
+            
+            if (!state.hasDrawn) {
+                showDrawFeedback(qIdx, '❌ Najpierw narysuj kanji!', 'error');
+                return;
+            }
+            
+            state.checked = true;
+            state.locked = true;
+            
+            // Disable canvas
+            state.canvas.style.pointerEvents = 'none';
+            state.canvas.style.opacity = '0.8';
+            
+            // Hide check and clear buttons, show only replay
+            var controls = document.getElementById('draw-controls-' + qIdx);
+            if (controls) {
+                controls.innerHTML = '<button class="replay-btn" onclick="replayDrawAnswer(' + qIdx + ')">▶️ Powtórz animację</button>';
+            }
+            
+            // Show answer box with animation
+            var answerBoxContainer = document.getElementById('draw-answer-box-' + qIdx);
+            if (answerBoxContainer) {
+                answerBoxContainer.classList.add('show');
+            }
+            
+            // Show the answer with animation (safely)
+            try {
+                if (state.writer) {
+                    state.writer.showCharacter();
+                    state.writer.animateCharacter();
+                }
+            } catch (e) {
+                console.log('Could not animate character:', e);
+            }
+            
+            // Show self-check buttons
+            var selfCheck = document.getElementById('draw-self-check-' + qIdx);
+            if (selfCheck) {
+                selfCheck.classList.add('show');
+            }
+            
+            showDrawFeedback(qIdx, '🔍 Porównaj i oceń - odpowiedź jest zablokowana', 'hint');
+        }
+        
+        function replayDrawAnswer(qIdx) {
+            var state = drawQuizState[qIdx];
+            try {
+                if (state && state.writer) {
+                    state.writer.animateCharacter();
+                }
+            } catch (e) {
+                console.log('Could not replay animation:', e);
+            }
+        }
+        
+        function markDrawCorrect(qIdx) {
+            var state = drawQuizState[qIdx];
+            if (!state || state.selfMarked) return; // Already marked
+            
+            state.selfMarked = 'correct';
+            state.canvas.classList.add('correct');
+            state.canvas.classList.remove('incorrect');
+            answers[qIdx] = { complete: true, selfMarked: 'correct' };
+            
+            // Disable self-check buttons
+            var selfCheck = document.getElementById('draw-self-check-' + qIdx);
+            if (selfCheck) {
+                selfCheck.innerHTML = '<div class="draw-self-check-title" style="color:#2e7d32;">✅ Oznaczono jako poprawne</div>';
+            }
+            
+            showDrawFeedback(qIdx, '✅ Poprawne! Pytanie zakończone.', 'success');
+            updateProgress();
+        }
+        
+        function markDrawIncorrect(qIdx) {
+            var state = drawQuizState[qIdx];
+            if (!state || state.selfMarked) return; // Already marked
+            
+            state.selfMarked = 'incorrect';
+            state.canvas.classList.add('incorrect');
+            state.canvas.classList.remove('correct');
+            answers[qIdx] = { complete: true, selfMarked: 'incorrect' };
+            
+            // Disable self-check buttons
+            var selfCheck = document.getElementById('draw-self-check-' + qIdx);
+            if (selfCheck) {
+                selfCheck.innerHTML = '<div class="draw-self-check-title" style="color:#e63946;">❌ Oznaczono jako niepoprawne</div>';
+            }
+            
+            showDrawFeedback(qIdx, '❌ Niepoprawne. Obejrzyj animację i zapamiętaj!', 'error');
+            updateProgress();
+        }
+        
+        // ===== STROKE ORDER QUIZ =====
+        var strokeQuizState = {};
+        
+        function initStrokeQuiz(qIdx, kanji) {
+            var targetKanji = null;
+            for (var i = 0; i < kanji.length; i++) {
+                var c = kanji.charCodeAt(i);
+                if (c >= 0x4e00 && c <= 0x9fff) {
+                    targetKanji = kanji[i];
+                    break;
+                }
+            }
+            
+            if (!targetKanji) return;
+            
+            var box = document.getElementById('stroke-box-' + qIdx);
+            if (!box) return;
+            
+            strokeQuizState[qIdx] = {
+                kanji: targetKanji,
+                mistakes: 0,
+                maxMistakes: 3,
+                strokes: 0,
+                totalStrokes: 0,
+                complete: false,
+                locked: false,
+                writer: null
+            };
+            
+            try {
+                var writer = HanziWriter.create(box, targetKanji, {
+                    width: 200,
+                    height: 200,
+                    padding: 10,
+                    showOutline: true,
+                    showCharacter: false,
+                    strokeColor: '#2d4059',
+                    outlineColor: '#ddd',
+                    drawingColor: '#e63946',
+                    highlightColor: '#d4a574',
+                    showHintAfterMisses: false
+                });
+                
+                strokeQuizState[qIdx].writer = writer;
+                
+                writer.getCharacterData().then(function(data) {
+                    if (data && data.strokes) {
+                        strokeQuizState[qIdx].totalStrokes = data.strokes.length;
+                        updateStrokeStats(qIdx);
+                    }
+                });
+                
+                writer.quiz({
+                    onCorrectStroke: function(data) {
+                        var state = strokeQuizState[qIdx];
+                        state.strokes = data.strokeNum + 1;
+                        updateStrokeStats(qIdx);
+                        showStrokeFeedback(qIdx, '✓ Kreska ' + state.strokes + '/' + state.totalStrokes + ' poprawna!', 'success');
+                    },
+                    onMistake: function(data) {
+                        var state = strokeQuizState[qIdx];
+                        state.mistakes++;
+                        updateStrokeStats(qIdx);
+                        
+                        var remaining = state.maxMistakes - state.mistakes;
+                        
+                        if (remaining <= 0) {
+                            // Lock the quiz
+                            state.locked = true;
+                            answers[qIdx] = { complete: false, mistakes: state.mistakes, failed: true };
+                            
+                            // Show the answer
+                            writer.showCharacter();
+                            writer.animateCharacter();
+                            
+                            box.style.pointerEvents = 'none';
+                            box.classList.add('locked');
+                            
+                            showStrokeFeedback(qIdx, '❌ 3 błędy! Pytanie zablokowane. Obejrzyj poprawną animację.', 'error');
+                        } else {
+                            var msg = '✗ Błąd! ';
+                            if (data.strokeNum === 0) {
+                                msg += 'Zła pozycja startowa. ';
+                            }
+                            msg += 'Pozostało prób: ' + remaining;
+                            showStrokeFeedback(qIdx, msg, 'error');
+                        }
+                        updateProgress();
+                    },
+                    onComplete: function(data) {
+                        var state = strokeQuizState[qIdx];
+                        state.complete = true;
+                        
+                        box.classList.add('complete');
+                        
+                        var msg = '🎉 Ukończono! ';
+                        if (state.mistakes === 0) {
+                            msg += 'Perfekcyjnie bez błędów!';
+                        } else {
+                            msg += 'Z ' + state.mistakes + ' błędem/błędami.';
+                        }
+                        
+                        answers[qIdx] = { complete: true, mistakes: state.mistakes };
+                        showStrokeFeedback(qIdx, msg, 'success');
+                        updateStrokeStats(qIdx);
+                        updateProgress();
+                    }
+                });
+                
+            } catch (e) {
+                console.log('Stroke quiz error:', e);
+                box.innerHTML = '<div style="padding:40px;color:#666;">Quiz niedostępny dla: ' + targetKanji + '</div>';
+            }
+        }
+        
+        function updateStrokeStats(qIdx) {
+            var state = strokeQuizState[qIdx];
+            if (!state) return;
+            
+            var statsEl = document.getElementById('stroke-stats-' + qIdx);
+            if (!statsEl) return;
+            
+            var remaining = state.maxMistakes - state.mistakes;
+            var strokeText = state.strokes + '/' + (state.totalStrokes || '?');
+            
+            var mistakeClass = remaining <= 1 ? ' danger' : '';
+            var completeClass = state.complete ? ' complete' : '';
+            
+            statsEl.innerHTML = 
+                '<div class="stroke-stat strokes' + completeClass + '">🖌️ Kreski: ' + strokeText + '</div>' +
+                '<div class="stroke-stat attempts' + mistakeClass + '">❤️ Pozostało prób: ' + remaining + '</div>';
+        }
+        
+        function showStrokeFeedback(qIdx, message, type) {
+            var feedbackEl = document.getElementById('stroke-feedback-' + qIdx);
+            if (!feedbackEl) return;
+            
+            feedbackEl.className = 'stroke-feedback ' + type;
+            feedbackEl.textContent = message;
+        }
+        
+        function replayStrokeAnswer(qIdx) {
+            var state = strokeQuizState[qIdx];
+            try {
+                if (state && state.writer && state.locked) {
+                    state.writer.animateCharacter();
+                }
+            } catch (e) {
+                console.log('Could not replay stroke animation:', e);
+            }
+        }
+        
+        // ===== BOMB DEFUSE GAME =====
+        var bombState = {};
+        var wireColors = ['wire-red', 'wire-blue', 'wire-green', 'wire-yellow'];
+        
+        function startBomb(qIdx) {
+            var state = bombState[qIdx];
+            if (!state || state.started) return;
+            
+            state.started = true;
+            state.timeLeft = state.totalTime || 15;
+            state.selectedKanji = null;
+            state.matches = [];
+            state.exploded = false;
+            
+            // Hide start screen, show game
+            var startScreen = document.getElementById('bomb-start-' + qIdx);
+            var game = document.getElementById('bomb-game-' + qIdx);
+            if (startScreen) startScreen.classList.add('hidden');
+            if (game) game.classList.add('active');
+            
+            // Start timer
+            state.timerInterval = setInterval(function() {
+                state.timeLeft--;
+                updateBombTimer(qIdx);
+                
+                if (state.timeLeft <= 0) {
+                    explodeBomb(qIdx);
+                }
+            }, 1000);
+            
+            updateBombTimer(qIdx);
+        }
+        
+        function updateBombTimer(qIdx) {
+            var state = bombState[qIdx];
+            var timerEl = document.getElementById('bomb-timer-' + qIdx);
+            if (!timerEl || !state) return;
+            
+            var seconds = state.timeLeft;
+            timerEl.textContent = '⏱️ ' + (seconds < 10 ? '0' : '') + seconds;
+            
+            if (seconds <= 5) {
+                timerEl.classList.add('warning');
+            } else {
+                timerEl.classList.remove('warning');
+            }
+        }
+        
+        function selectBombKanji(qIdx, kanjiIdx) {
+            var state = bombState[qIdx];
+            if (!state || state.exploded || !state.started) return;
+            
+            // Check if already matched
+            for (var i = 0; i < state.matches.length; i++) {
+                if (state.matches[i].kanjiIdx === kanjiIdx) return;
+            }
+            
+            // Deselect previous
+            var items = document.querySelectorAll('#bomb-kanji-' + qIdx + ' .bomb-item');
+            for (var j = 0; j < items.length; j++) {
+                items[j].classList.remove('selected');
+            }
+            
+            // Select this one
+            var item = document.getElementById('bomb-kanji-' + qIdx + '-' + kanjiIdx);
+            if (item) item.classList.add('selected');
+            
+            state.selectedKanji = kanjiIdx;
+        }
+        
+        function selectBombReading(qIdx, readingIdx) {
+            var state = bombState[qIdx];
+            if (!state || state.exploded || !state.started) return;
+            if (state.selectedKanji === null) return;
+            
+            // Check if reading already matched
+            for (var i = 0; i < state.matches.length; i++) {
+                if (state.matches[i].readingIdx === readingIdx) return;
+            }
+            
+            var q = questions[qIdx];
+            var kanjiIdx = state.selectedKanji;
+            var isCorrect = q.bomb_pairs[kanjiIdx].readingIdx === readingIdx;
+            
+            var kanjiItem = document.getElementById('bomb-kanji-' + qIdx + '-' + kanjiIdx);
+            var readingItem = document.getElementById('bomb-reading-' + qIdx + '-' + readingIdx);
+            
+            if (isCorrect) {
+                // Correct match!
+                state.matches.push({ kanjiIdx: kanjiIdx, readingIdx: readingIdx });
+                
+                if (kanjiItem) {
+                    kanjiItem.classList.remove('selected');
+                    kanjiItem.classList.add('correct', 'matched');
+                }
+                if (readingItem) {
+                    readingItem.classList.add('correct', 'matched');
+                }
+                
+                state.selectedKanji = null;
+                
+                // Check if all matched
+                if (state.matches.length === q.bomb_pairs.length) {
+                    defuseBomb(qIdx);
+                }
+            } else {
+                // Wrong match - show briefly
+                if (kanjiItem) kanjiItem.classList.add('wrong');
+                if (readingItem) readingItem.classList.add('wrong');
+                
+                setTimeout(function() {
+                    if (kanjiItem) kanjiItem.classList.remove('wrong', 'selected');
+                    if (readingItem) readingItem.classList.remove('wrong');
+                    state.selectedKanji = null;
+                }, 500);
+            }
+        }
+        
+        function defuseBomb(qIdx) {
+            var state = bombState[qIdx];
+            if (!state) return;
+            
+            clearInterval(state.timerInterval);
+            state.defused = true;
+            
+            answers[qIdx] = { complete: true, defused: true, timeLeft: state.timeLeft };
+            
+            var result = document.getElementById('bomb-result-' + qIdx);
+            if (result) {
+                result.classList.add('show', 'success');
+                result.innerHTML = '🎉 Bomba rozbrojona! Pozostało ' + state.timeLeft + 's';
+            }
+            
+            updateProgress();
+        }
+        
+        function explodeBomb(qIdx) {
+            var state = bombState[qIdx];
+            if (!state || state.defused) return;
+            
+            clearInterval(state.timerInterval);
+            state.exploded = true;
+            
+            answers[qIdx] = { complete: true, defused: false, exploded: true };
+            
+            // Show explosion overlay
+            var overlay = document.getElementById('explosion-overlay');
+            if (overlay) overlay.classList.add('show');
+            
+            // Store which question exploded
+            window.lastExplodedQuestion = qIdx;
+            
+            var result = document.getElementById('bomb-result-' + qIdx);
+            if (result) {
+                result.classList.add('show', 'failed');
+                result.innerHTML = '💥 Bomba wybuchła!';
+            }
+            
+            updateProgress();
+        }
+        
+        function closeExplosion() {
+            var overlay = document.getElementById('explosion-overlay');
+            if (overlay) overlay.classList.remove('show');
+        }
+        
+        // ===== RUNNER GAME (Top-Down with Arrow Controls) =====
+        var runnerState = {};
+        var activeRunnerGame = null;
+        
+        function startRunner(qIdx) {
+            var state = runnerState[qIdx];
+            if (!state || state.started) return;
+            
+            state.started = true;
+            state.currentCheckpoint = 0;
+            state.correctCount = 0;
+            state.gameOver = false;
+            state.won = false;
+            state.playerX = 50; // percentage from left
+            state.playerY = 65; // percentage from top
+            state.gorillaX = 50;
+            state.gorillaY = 90; // starts behind player
+            state.forkY = -50; // fork starts above screen
+            state.forkActive = false;
+            state.forkEntered = false;
+            state.keysPressed = {};
+            
+            activeRunnerGame = qIdx;
+            
+            // Hide start screen, show game
+            document.getElementById('runner-start-' + qIdx).classList.add('hidden');
+            var canvas = document.getElementById('runner-canvas-' + qIdx);
+            canvas.classList.add('active');
+            canvas.focus();
+            
+            // Setup keyboard listeners
+            canvas.onkeydown = function(e) { handleRunnerKeyDown(qIdx, e); };
+            canvas.onkeyup = function(e) { handleRunnerKeyUp(qIdx, e); };
+            
+            // Start game loop
+            state.gameLoop = setInterval(function() { updateRunnerGame(qIdx); }, 33); // ~30 FPS
+            
+            // Show first fork after a delay
+            setTimeout(function() {
+                showRunnerFork(qIdx, 0);
+            }, 1000);
+            
+            // Update UI
+            updateRunnerUI(qIdx);
+        }
+        
+        function handleRunnerKeyDown(qIdx, e) {
+            var state = runnerState[qIdx];
+            if (!state || state.gameOver) return;
+            
+            state.keysPressed[e.key] = true;
+            
+            // Prevent scrolling
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
+        }
+        
+        function handleRunnerKeyUp(qIdx, e) {
+            var state = runnerState[qIdx];
+            if (!state) return;
+            state.keysPressed[e.key] = false;
+        }
+        
+        function updateRunnerGame(qIdx) {
+            var state = runnerState[qIdx];
+            if (!state || state.gameOver) return;
+            
+            var q = questions[qIdx];
+            var checkpoints = q.runner_checkpoints || [];
+            
+            // Move player based on keys (LEFT/RIGHT only)
+            if (state.keysPressed['ArrowLeft'] || state.keysPressed['a']) {
+                state.playerX = Math.max(25, state.playerX - 3);
+            }
+            if (state.keysPressed['ArrowRight'] || state.keysPressed['d']) {
+                state.playerX = Math.min(75, state.playerX + 3);
+            }
+            // Player automatically runs forward (slight upward drift)
+            state.playerY = Math.max(55, state.playerY - 0.3);
+            
+            // Gorilla follows behind (visual effect only, can't catch player)
+            var dx = state.playerX - state.gorillaX;
+            state.gorillaX += Math.sign(dx) * Math.min(Math.abs(dx) * 0.02, 0.3);
+            // Gorilla stays at fixed distance behind player
+            state.gorillaY = Math.min(95, state.playerY + 25);
+            
+            // Move fork down toward player (balanced speed)
+            if (state.forkActive) {
+                state.forkY += 0.4; // Balanced - enough time to read but not too slow
+                
+                // Check collision: fork reaches player zone
+                // Fork bottom edge is at forkY + 20 (fork height ~20%)
+                var forkBottom = state.forkY + 20;
+                
+                // Fork reaches player when it comes down to player's Y position
+                if (forkBottom >= state.playerY - 5 && !state.forkEntered) {
+                    state.forkEntered = true;
+                    
+                    // Determine which path player is in based on X position
+                    var pathIdx = -1;
+                    if (state.playerX <= 38) pathIdx = 0; // Left path
+                    else if (state.playerX >= 62) pathIdx = 2; // Right path
+                    else pathIdx = 1; // Center path
+                    
+                    var checkpoint = checkpoints[state.currentCheckpoint];
+                    if (checkpoint && pathIdx === checkpoint.correct) {
+                        // Correct path!
+                        state.correctCount++;
+                        state.currentCheckpoint++;
+                        showForkResult(qIdx, pathIdx, true);
+                        
+                        // Reset for next fork (show next question immediately)
+                        setTimeout(function() {
+                            state.forkActive = false;
+                            state.forkEntered = false;
+                            state.forkY = -25;
+                            state.playerY = 65;
+                            state.playerX = 50;
+                            state.gorillaY = 90;
+                            state.gorillaX = 50;
+                            
+                            // Hide old fork
+                            var forkEl = document.getElementById('runner-fork-' + qIdx);
+                            if (forkEl) forkEl.style.display = 'none';
+                            
+                            if (state.currentCheckpoint >= checkpoints.length) {
+                                runnerWon(qIdx);
+                            } else {
+                                // Show next question immediately
+                                showRunnerFork(qIdx, state.currentCheckpoint);
+                            }
+                        }, 800);
+                    } else if (checkpoint) {
+                        // Wrong path!
+                        showForkResult(qIdx, pathIdx, false);
+                        var correctPath = document.getElementById('fork-path-' + qIdx + '-' + checkpoint.correct);
+                        if (correctPath) correctPath.classList.add('correct');
+                        runnerFell(qIdx, 'Złe tłumaczenie: ' + checkpoint.correctKanji);
+                        return;
+                    }
+                }
+                
+                // Fork passed without player entering (fell off bottom)
+                if (state.forkY > 90 && !state.forkEntered) {
+                    runnerFell(qIdx, 'Nie wbiegłeś w rozwidlenie!');
+                    return;
+                }
+            }
+            
+            // Update positions visually
+            var player = document.getElementById('runner-player-' + qIdx);
+            var gorilla = document.getElementById('runner-gorilla-' + qIdx);
+            var fork = document.getElementById('runner-fork-' + qIdx);
+            
+            if (player) {
+                player.style.left = state.playerX + '%';
+                player.style.top = state.playerY + '%';
+                player.style.transform = 'translate(-50%, -50%)';
+            }
+            if (gorilla) {
+                gorilla.style.left = state.gorillaX + '%';
+                gorilla.style.top = state.gorillaY + '%';
+                gorilla.style.transform = 'translate(-50%, -50%)';
+            }
+            if (fork && state.forkActive) {
+                fork.style.top = state.forkY + '%';
+            }
+            
+            // Update gorilla indicator (visual only - gorilla can't catch you)
+            var distanceEl = document.getElementById('runner-distance-' + qIdx);
+            if (distanceEl) {
+                distanceEl.textContent = '🦍 Goryl goni!';
+                distanceEl.style.color = '#ffaa00';
+            }
+            
+            updateRunnerUI(qIdx);
+        }
+        
+        function showRunnerFork(qIdx, checkpointIdx) {
+            var state = runnerState[qIdx];
+            var q = questions[qIdx];
+            if (state.gameOver || !q.runner_checkpoints) return;
+            
+            var checkpoint = q.runner_checkpoints[checkpointIdx];
+            if (!checkpoint) return;
+            
+            state.forkActive = true;
+            state.forkEntered = false;
+            state.forkY = -25; // Start visible at top for more reading time
+            
+            // Update fork HTML - no onclick, selection by running into path
+            var forkEl = document.getElementById('runner-fork-' + qIdx);
+            if (forkEl) {
+                var pathsHtml = '';
+                var arrows = ['←', '↑', '→'];
+                var hints = ['(lewo)', '(środek)', '(prawo)'];
+                for (var i = 0; i < checkpoint.options.length; i++) {
+                    pathsHtml += '<div class="runner-fork-path" id="fork-path-' + qIdx + '-' + i + '">' +
+                        '<div class="runner-fork-label">' + checkpoint.options[i] + '</div>' +
+                        '<div class="runner-fork-arrow">' + arrows[i] + '</div>' +
+                        '<div style="font-size:0.7rem;opacity:0.7;margin-top:2px;">' + hints[i] + '</div>' +
+                        '</div>';
+                }
+                forkEl.innerHTML = pathsHtml;
+                forkEl.style.display = 'flex';
+                forkEl.style.top = state.forkY + '%';
+            }
+            
+            // Update question banner
+            var banner = document.getElementById('runner-question-' + qIdx);
+            if (banner) {
+                banner.textContent = '🎯 Znajdź: ' + checkpoint.meaning;
+                banner.style.background = 'rgba(230, 57, 70, 0.9)';
+            }
+        }
+        
+        function showForkResult(qIdx, pathIdx, correct) {
+            var pathEl = document.getElementById('fork-path-' + qIdx + '-' + pathIdx);
+            if (pathEl) {
+                pathEl.classList.add(correct ? 'correct' : 'incorrect');
+            }
+        }
+        
+        function updateRunnerUI(qIdx) {
+            var state = runnerState[qIdx];
+            var q = questions[qIdx];
+            
+            // Update progress
+            var total = q.runner_checkpoints ? q.runner_checkpoints.length : 1;
+            var percent = (state.correctCount / total) * 100;
+            var progressEl = document.getElementById('runner-progress-' + qIdx);
+            if (progressEl) {
+                progressEl.style.width = percent + '%';
+            }
+            
+            // Update score
+            var scoreEl = document.getElementById('runner-score-' + qIdx);
+            if (scoreEl) {
+                scoreEl.textContent = '✓ ' + state.correctCount + '/' + total;
+            }
+        }
+        
+        function runnerFell(qIdx, message) {
+            var state = runnerState[qIdx];
+            state.gameOver = true;
+            state.won = false;
+            clearInterval(state.gameLoop);
+            
+            var player = document.getElementById('runner-player-' + qIdx);
+            if (player) {
+                player.classList.remove('running');
+                player.classList.add('crashed');
+            }
+            
+            setTimeout(function() {
+                var gameOver = document.getElementById('runner-gameover-' + qIdx);
+                if (gameOver) {
+                    gameOver.querySelector('.runner-game-over-text').textContent = message;
+                    gameOver.querySelector('.runner-game-over-emoji').textContent = '💥';
+                    gameOver.classList.add('show');
+                }
+                
+                var result = document.getElementById('runner-result-' + qIdx);
+                if (result) {
+                    result.classList.add('show', 'failed');
+                    result.textContent = '❌ ' + message;
+                }
+                
+                answers[qIdx] = { completed: false, won: false };
+            }, 500);
+        }
+        
+        function runnerCaught(qIdx, message) {
+            var state = runnerState[qIdx];
+            state.gameOver = true;
+            state.won = false;
+            clearInterval(state.gameLoop);
+            
+            var gorilla = document.getElementById('runner-gorilla-' + qIdx);
+            if (gorilla) gorilla.classList.add('catching');
+            
+            var player = document.getElementById('runner-player-' + qIdx);
+            if (player) {
+                player.classList.remove('running');
+                player.classList.add('eaten');
+            }
+            
+            setTimeout(function() {
+                var gameOver = document.getElementById('runner-gameover-' + qIdx);
+                if (gameOver) {
+                    gameOver.querySelector('.runner-game-over-text').textContent = 'ZJEDZONA!';
+                    gameOver.querySelector('.runner-game-over-emoji').textContent = '🦍';
+                    gameOver.classList.add('show');
+                }
+                
+                var result = document.getElementById('runner-result-' + qIdx);
+                if (result) {
+                    result.classList.add('show', 'failed');
+                    result.textContent = '❌ ' + message;
+                }
+                
+                answers[qIdx] = { completed: false, won: false };
+            }, 500);
+        }
+        
+        function runnerWon(qIdx) {
+            var state = runnerState[qIdx];
+            state.gameOver = true;
+            state.won = true;
+            clearInterval(state.gameLoop);
+            
+            var success = document.getElementById('runner-success-' + qIdx);
+            if (success) success.classList.add('show');
+            
+            var result = document.getElementById('runner-result-' + qIdx);
+            if (result) {
+                result.classList.add('show', 'success');
+                result.textContent = '✅ Uciekłaś! Wszystkie odpowiedzi poprawne!';
+            }
+            
+            answers[qIdx] = { completed: true, won: true };
+            updateProgress();
+        }
+        
+        function showKanjiAnimation(qIdx, kanji) {
+            // Get the first kanji character from the word
+            var targetKanji = null;
+            for (var i = 0; i < kanji.length; i++) {
+                var c = kanji.charCodeAt(i);
+                if (c >= 0x4e00 && c <= 0x9fff) {
+                    targetKanji = kanji[i];
+                    break;
+                }
+            }
+            
+            if (!targetKanji) return;
+            
+            var container = document.getElementById('anim-' + qIdx);
+            var box = document.getElementById('anim-box-' + qIdx);
+            
+            if (!container || !box) return;
+            
+            // Clear previous animation
+            box.innerHTML = '';
+            
+            // Show container
+            container.classList.add('show');
+            
+            // Create Hanzi Writer instance
+            try {
+                kanjiWriters[qIdx] = HanziWriter.create(box, targetKanji, {
+                    width: 150,
+                    height: 150,
+                    padding: 5,
+                    showOutline: true,
+                    strokeAnimationSpeed: 1,
+                    delayBetweenStrokes: 300,
+                    strokeColor: '#2d4059',
+                    outlineColor: '#ddd',
+                    drawingColor: '#e63946'
+                });
+                
+                // Start animation
+                kanjiWriters[qIdx].animateCharacter();
+            } catch (e) {
+                console.log('Animation error for ' + targetKanji + ':', e);
+                box.innerHTML = '<div style="padding:20px;color:#666;">Animacja niedostępna dla: ' + targetKanji + '</div>';
+            }
+        }
+        
+        function replayAnimation(qIdx) {
+            if (kanjiWriters[qIdx]) {
+                kanjiWriters[qIdx].animateCharacter();
+            }
+        }
         
         function renderQuestions() {
             var container = document.getElementById('questions');
@@ -531,26 +2836,329 @@
             
             for (var idx = 0; idx < questions.length; idx++) {
                 var q = questions[idx];
-                var optionsHtml = '';
                 
-                for (var optIdx = 0; optIdx < q.options.length; optIdx++) {
-                    var opt = q.options[optIdx];
-                    var letter = String.fromCharCode(97 + optIdx);
-                    optionsHtml += '<div class="option" onclick="selectOption(' + idx + ', ' + optIdx + ')" id="opt-' + idx + '-' + optIdx + '">' +
-                        '<span class="option-letter">' + letter + '</span>' +
-                        '<span class="option-text">' + opt + '</span>' +
+                if (q.type === 'draw_kanji') {
+                    // Render free drawing quiz question
+                    html += '<div class="question-card" id="q' + idx + '">' +
+                        '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                        '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                        '<div class="question-text">' + q.question + '</div>' +
+                        '<div class="draw-quiz-container">' +
+                        '<div class="draw-area">' +
+                        '<div class="draw-canvas-wrapper">' +
+                        '<div class="draw-canvas-label">✏️ Twój rysunek</div>' +
+                        '<canvas class="draw-canvas" id="draw-canvas-' + idx + '" width="200" height="200"></canvas>' +
+                        '</div>' +
+                        '<div class="draw-answer-box" id="draw-answer-box-' + idx + '">' +
+                        '<div class="draw-canvas-label">✅ Poprawne kanji</div>' +
+                        '<div class="draw-answer-wrapper" id="draw-answer-' + idx + '"></div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="draw-feedback" id="draw-feedback-' + idx + '">🖌️ Narysuj kanji na czystym polu</div>' +
+                        '<div class="draw-controls" id="draw-controls-' + idx + '">' +
+                        '<button class="check-btn" onclick="checkDrawing(' + idx + ')">🔍 Sprawdź</button>' +
+                        '<button class="clear-btn" onclick="clearDrawing(' + idx + ')">🗑️ Wyczyść</button>' +
+                        '</div>' +
+                        '<div class="draw-self-check" id="draw-self-check-' + idx + '">' +
+                        '<div class="draw-self-check-title">Czy Twój rysunek jest poprawny?</div>' +
+                        '<div class="draw-self-check-buttons">' +
+                        '<button class="correct-btn" onclick="markDrawCorrect(' + idx + ')">✓ Tak, poprawny</button>' +
+                        '<button class="incorrect-btn" onclick="markDrawIncorrect(' + idx + ')">✗ Nie, błędny</button>' +
+                        '</div></div>' +
+                        '</div></div>';
+                        
+                } else if (q.type === 'stroke_order') {
+                    // Render stroke order quiz question
+                    html += '<div class="question-card" id="q' + idx + '">' +
+                        '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                        '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                        '<div class="question-text">' + q.question + '</div>' +
+                        '<div class="stroke-quiz-container">' +
+                        '<div class="stroke-quiz-box" id="stroke-box-' + idx + '"></div>' +
+                        '<div class="stroke-stats" id="stroke-stats-' + idx + '"></div>' +
+                        '<div class="stroke-feedback" id="stroke-feedback-' + idx + '">🖌️ Rysuj kreski w poprawnej kolejności (3 próby)</div>' +
+                        '<div class="stroke-controls" id="stroke-controls-' + idx + '">' +
+                        '<button class="replay-btn" onclick="replayStrokeAnswer(' + idx + ')">▶️ Powtórz animację</button>' +
+                        '</div>' +
+                        '</div></div>';
+                        
+                } else if (q.type === 'bomb_defuse') {
+                    // Render bomb defuse game
+                    var kanjiHtml = '';
+                    var readingHtml = '';
+                    var pairs = q.bomb_pairs || [];
+                    var shuffledReadings = q.bomb_readings || [];
+                    var bombTime = q.bomb_time || 15;
+                    
+                    for (var pi = 0; pi < pairs.length; pi++) {
+                        var color = wireColors[pi % wireColors.length];
+                        kanjiHtml += '<div class="bomb-item" id="bomb-kanji-' + idx + '-' + pi + '" onclick="selectBombKanji(' + idx + ', ' + pi + ')">' +
+                            '<span class="bomb-wire ' + color + '"></span>' +
+                            '<span class="bomb-kanji-text">' + pairs[pi].kanji + '</span>' +
+                            '<span class="bomb-meaning">' + pairs[pi].meaning + '</span>' +
+                            '</div>';
+                    }
+                    
+                    for (var ri = 0; ri < shuffledReadings.length; ri++) {
+                        var rcolor = wireColors[ri % wireColors.length];
+                        readingHtml += '<div class="bomb-item" id="bomb-reading-' + idx + '-' + ri + '" onclick="selectBombReading(' + idx + ', ' + ri + ')">' +
+                            '<span class="bomb-wire ' + rcolor + '"></span>' + shuffledReadings[ri] + '</div>';
+                    }
+                    
+                    html += '<div class="question-card" id="q' + idx + '">' +
+                        '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                        '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                        '<div class="bomb-container">' +
+                        '<div class="bomb-start-screen" id="bomb-start-' + idx + '">' +
+                        '<div class="bomb-emoji">💣</div>' +
+                        '<div style="color:#888;margin:1rem 0;">Połącz ' + pairs.length + ' par kanji+znaczenie → czytanie w ' + bombTime + ' sekund!</div>' +
+                        '<button class="bomb-start-btn" onclick="startBomb(' + idx + ')">🔥 START</button>' +
+                        '</div>' +
+                        '<div class="bomb-game" id="bomb-game-' + idx + '">' +
+                        '<div class="bomb-timer" id="bomb-timer-' + idx + '">⏱️ ' + bombTime + '</div>' +
+                        '<div class="bomb-wires-area">' +
+                        '<div class="bomb-column" id="bomb-kanji-' + idx + '">' +
+                        '<div class="bomb-column-title">漢字 + 意味</div>' + kanjiHtml + '</div>' +
+                        '<div class="bomb-column" id="bomb-readings-' + idx + '">' +
+                        '<div class="bomb-column-title">読み方 Czytanie</div>' + readingHtml + '</div>' +
+                        '</div>' +
+                        '<div class="bomb-result" id="bomb-result-' + idx + '"></div>' +
+                        '</div>' +
+                        '</div></div>';
+                    
+                    // Initialize bomb state with dynamic time
+                    bombState[idx] = {
+                        started: false,
+                        timeLeft: bombTime,
+                        totalTime: bombTime,
+                        matches: [],
+                        defused: false,
+                        exploded: false
+                    };
+                        
+                } else if (q.type === 'runner_game') {
+                    // Render runner game (top-down with arrow controls)
+                    var checkpoints = q.runner_checkpoints || [];
+                    
+                    html += '<div class="question-card" id="q' + idx + '">' +
+                        '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                        '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                        '<div class="runner-container">' +
+                        '<div class="runner-start-screen" id="runner-start-' + idx + '">' +
+                        '<div class="runner-emoji">' +
+                        '<div class="runner-preview-sprite runner-preview-gorilla"></div>' +
+                        '<span class="runner-preview-arrow">→</span>' +
+                        '<div class="runner-preview-sprite runner-preview-player"></div>' +
+                        '</div>' +
+                        '<div style="color:#888;margin:1rem 0 0.5rem 0;">Uciekaj przed gorylem! Wybierz właściwą ścieżkę strzałkami ← →</div>' +
+                        '<div class="runner-controls-info" style="margin-bottom:1.5rem;">Sterowanie: <kbd>←</kbd> <kbd>→</kbd> lub <kbd>A</kbd> <kbd>D</kbd></div>' +
+                        '<button class="runner-start-btn" onclick="startRunner(' + idx + ')">🏃 START</button>' +
+                        '</div>' +
+                        '<div class="runner-game-canvas" id="runner-canvas-' + idx + '" tabindex="0">' +
+                        '<div class="runner-road"></div>' +
+                        '<div class="runner-lane-labels"><span class="runner-lane-label">←</span><span class="runner-lane-label">↑</span><span class="runner-lane-label">→</span></div>' +
+                        '<div class="runner-fork" id="runner-fork-' + idx + '" style="display:none;"></div>' +
+                        '<div class="runner-player running" id="runner-player-' + idx + '" style="left:50%;top:75%;"></div>' +
+                        '<div class="runner-gorilla" id="runner-gorilla-' + idx + '" style="left:50%;top:95%;"></div>' +
+                        '<div class="runner-question-banner" id="runner-question-' + idx + '">Przygotuj się...</div>' +
+                        '<div class="runner-distance" id="runner-distance-' + idx + '">🦍 20m za tobą</div>' +
+                        '<div class="runner-score" id="runner-score-' + idx + '">✓ 0/' + checkpoints.length + '</div>' +
+                        '<div class="runner-progress"><div class="runner-progress-fill" id="runner-progress-' + idx + '" style="width:0%"></div></div>' +
+                        '<div class="runner-controls-hint">← lewo | prawo →</div>' +
+                        '<div class="runner-game-over" id="runner-gameover-' + idx + '">' +
+                        '<div class="runner-game-over-emoji">🦍</div>' +
+                        '<div class="runner-game-over-text">ZJEDZONA!</div>' +
+                        '</div>' +
+                        '<div class="runner-success" id="runner-success-' + idx + '">' +
+                        '<div class="runner-success-emoji">🎉</div>' +
+                        '<div class="runner-success-text">UCIEKŁAŚ!</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="runner-result" id="runner-result-' + idx + '"></div>' +
+                        '</div></div>';
+                    
+                    // Initialize runner state
+                    runnerState[idx] = {
+                        started: false,
+                        currentCheckpoint: 0,
+                        correctCount: 0,
+                        gameOver: false,
+                        won: false,
+                        playerX: 50,
+                        playerY: 65,
+                        gorillaX: 50,
+                        gorillaY: 90,
+                        keysPressed: {},
+                        forkEntered: false,
+                        gameLoop: null
+                    };
+                        
+                } else if (q.type === 'scramble' || q.type === 'reading_scramble') {
+                    // Render scramble question (kanji or reading)
+                    var tilesHtml = '';
+                    for (var tileIdx = 0; tileIdx < q.options.length; tileIdx++) {
+                        var tile = q.options[tileIdx];
+                        tilesHtml += '<div class="scramble-tile" onclick="addToScramble(' + idx + ', ' + tileIdx + ')" ' +
+                            'id="tile-' + idx + '-' + tileIdx + '">' + tile + '</div>';
+                    }
+                    
+                    // Different hint for different scramble types
+                    var hintText = '';
+                    if (q.type === 'scramble') {
+                        hintText = '💡 Czytanie: ' + (q.hint || q.reading);
+                    } else {
+                        hintText = '💡 Znaczenie: ' + (q.hint || q.meaning);
+                    }
+                    
+                    html += '<div class="question-card" id="q' + idx + '">' +
+                        '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                        '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                        '<div class="question-text">' + q.question + '</div>' +
+                        '<div class="scramble-container">' +
+                        '<div class="scramble-answer" id="scramble-answer-' + idx + '"></div>' +
+                        '<div class="scramble-tiles" id="scramble-tiles-' + idx + '">' + tilesHtml + '</div>' +
+                        '<div class="scramble-hint">' + hintText + '</div>' +
+                        '<button class="scramble-clear" onclick="clearScramble(' + idx + ')">🗑️ Wyczyść</button>' +
+                        '<div class="scramble-result" id="scramble-result-' + idx + '"></div>' +
+                        '</div>' +
+                        '</div>';
+                    
+                    // Initialize scramble state
+                    scrambleAnswers[idx] = { chars: [], usedTiles: [] };
+                } else if (q.type === 'all_readings') {
+                    // Render multi-select question
+                    var optionsHtml = '';
+                    for (var optIdx = 0; optIdx < q.options.length; optIdx++) {
+                        var opt = q.options[optIdx];
+                        var letter = String.fromCharCode(97 + optIdx);
+                        optionsHtml += '<div class="option multi-select" onclick="toggleMultiSelect(' + idx + ', ' + optIdx + ')" id="opt-' + idx + '-' + optIdx + '">' +
+                            '<span class="option-checkbox">☐</span>' +
+                            '<span class="option-text">' + opt + '</span>' +
+                            '</div>';
+                    }
+                    
+                    html += '<div class="question-card" id="q' + idx + '">' +
+                        '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                        '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                        '<div class="question-text">' + q.question + '</div>' +
+                        '<div class="multi-select-hint">💡 Zaznacz wszystkie poprawne odpowiedzi</div>' +
+                        '<div class="options">' + optionsHtml + '</div>' +
+                        '</div>';
+                    
+                    // Initialize multi-select state
+                    multiSelectAnswers[idx] = [];
+                } else {
+                    // Render normal multiple choice question
+                    var optionsHtml = '';
+                    for (var optIdx = 0; optIdx < q.options.length; optIdx++) {
+                        var opt = q.options[optIdx];
+                        var letter = String.fromCharCode(97 + optIdx);
+                        optionsHtml += '<div class="option" onclick="selectOption(' + idx + ', ' + optIdx + ')" id="opt-' + idx + '-' + optIdx + '">' +
+                            '<span class="option-letter">' + letter + '</span>' +
+                            '<span class="option-text">' + opt + '</span>' +
+                            '</div>';
+                    }
+                    
+                    html += '<div class="question-card" id="q' + idx + '">' +
+                        '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
+                        '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
+                        '<div class="question-text">' + q.question + '</div>' +
+                        '<div class="options">' + optionsHtml + '</div>' +
                         '</div>';
                 }
-                
-                html += '<div class="question-card" id="q' + idx + '">' +
-                    '<div class="question-type">' + (typeLabels[q.type] || q.type) + '</div>' +
-                    '<div class="question-number">問題 ' + (idx + 1) + '</div>' +
-                    '<div class="question-text">' + q.question + '</div>' +
-                    '<div class="options">' + optionsHtml + '</div>' +
-                    '</div>';
             }
             
             container.innerHTML = html;
+            
+            // Initialize drawing and stroke order quizzes after rendering
+            for (var initIdx = 0; initIdx < questions.length; initIdx++) {
+                if (questions[initIdx].type === 'draw_kanji') {
+                    initDrawQuiz(initIdx, questions[initIdx].kanji);
+                } else if (questions[initIdx].type === 'stroke_order') {
+                    initStrokeQuiz(initIdx, questions[initIdx].kanji);
+                }
+            }
+        }
+        
+        function addToScramble(qIdx, tileIdx) {
+            var tile = document.getElementById('tile-' + qIdx + '-' + tileIdx);
+            if (tile.classList.contains('used')) return;
+            
+            var q = questions[qIdx];
+            var char = q.options[tileIdx];
+            
+            // Mark tile as used
+            tile.classList.add('used');
+            
+            // Add to answer
+            scrambleAnswers[qIdx].chars.push(char);
+            scrambleAnswers[qIdx].usedTiles.push(tileIdx);
+            
+            // Update answer display
+            updateScrambleAnswer(qIdx);
+            
+            // Update progress
+            updateProgress();
+        }
+        
+        function removeFromScramble(qIdx, charIdx) {
+            var state = scrambleAnswers[qIdx];
+            if (charIdx >= state.chars.length) return;
+            
+            // Get the tile index and unmark it
+            var tileIdx = state.usedTiles[charIdx];
+            var tile = document.getElementById('tile-' + qIdx + '-' + tileIdx);
+            if (tile) tile.classList.remove('used');
+            
+            // Remove from answer
+            state.chars.splice(charIdx, 1);
+            state.usedTiles.splice(charIdx, 1);
+            
+            // Update answer display
+            updateScrambleAnswer(qIdx);
+            updateProgress();
+        }
+        
+        function updateScrambleAnswer(qIdx) {
+            var answerDiv = document.getElementById('scramble-answer-' + qIdx);
+            var state = scrambleAnswers[qIdx];
+            
+            var html = '';
+            for (var i = 0; i < state.chars.length; i++) {
+                html += '<div class="scramble-tile in-answer" onclick="removeFromScramble(' + qIdx + ', ' + i + ')">' + 
+                    state.chars[i] + '</div>';
+            }
+            
+            answerDiv.innerHTML = html;
+            answerDiv.classList.toggle('has-content', state.chars.length > 0);
+            
+            // Store the answer string
+            answers[qIdx] = state.chars.join('');
+        }
+        
+        function clearScramble(qIdx) {
+            var state = scrambleAnswers[qIdx];
+            
+            // Unmark all tiles
+            for (var i = 0; i < state.usedTiles.length; i++) {
+                var tile = document.getElementById('tile-' + qIdx + '-' + state.usedTiles[i]);
+                if (tile) tile.classList.remove('used');
+            }
+            
+            // Clear state
+            state.chars = [];
+            state.usedTiles = [];
+            delete answers[qIdx];
+            
+            // Update display
+            updateScrambleAnswer(qIdx);
+            updateProgress();
+        }
+        
+        function updateProgress() {
+            var answeredCount = Object.keys(answers).length;
+            var progress = answeredCount / questions.length * 100;
+            document.getElementById('progress').style.width = progress + '%';
         }
         
         function selectOption(qIdx, optIdx) {
@@ -565,9 +3173,64 @@
             answers[qIdx] = optIdx;
             
             // Update progress
-            var answeredCount = Object.keys(answers).length;
-            var progress = answeredCount / questions.length * 100;
-            document.getElementById('progress').style.width = progress + '%';
+            updateProgress();
+        }
+        
+        function toggleMultiSelect(qIdx, optIdx) {
+            var option = document.getElementById('opt-' + qIdx + '-' + optIdx);
+            var checkbox = option.querySelector('.option-checkbox');
+            var selected = multiSelectAnswers[qIdx];
+            
+            var index = selected.indexOf(optIdx);
+            if (index > -1) {
+                // Unselect
+                selected.splice(index, 1);
+                option.classList.remove('selected');
+                checkbox.textContent = '☐';
+            } else {
+                // Select
+                selected.push(optIdx);
+                option.classList.add('selected');
+                checkbox.textContent = '☑';
+            }
+            
+            // Store in answers if at least one selected
+            if (selected.length > 0) {
+                answers[qIdx] = selected.slice(); // copy array
+            } else {
+                delete answers[qIdx];
+            }
+            
+            // Update progress
+            updateProgress();
+        }
+        
+        function startCheckAnswers() {
+            // Show loading overlay
+            var overlay = document.getElementById('loading-overlay');
+            var submitBtn = document.getElementById('submit-btn');
+            
+            if (overlay) overlay.classList.add('show');
+            if (submitBtn) {
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+            }
+            
+            // Run check async to allow UI to update
+            setTimeout(function() {
+                try {
+                    checkAnswers();
+                } catch (e) {
+                    console.error('Error checking answers:', e);
+                    alert('Błąd podczas sprawdzania: ' + e.message);
+                } finally {
+                    if (overlay) overlay.classList.remove('show');
+                    if (submitBtn) {
+                        submitBtn.classList.remove('loading');
+                        submitBtn.disabled = false;
+                    }
+                }
+            }, 100);
         }
         
         function checkAnswers() {
@@ -576,22 +3239,205 @@
             
             for (var idx = 0; idx < questions.length; idx++) {
                 var q = questions[idx];
-                var options = document.querySelectorAll('#q' + idx + ' .option');
                 
-                for (var optIdx = 0; optIdx < options.length; optIdx++) {
-                    var opt = options[optIdx];
-                    opt.classList.remove('selected', 'correct', 'incorrect');
-                    if (optIdx === q.correct) {
-                        opt.classList.add('correct');
-                    } else if (answers[idx] === optIdx) {
-                        opt.classList.add('incorrect');
+                if (q.type === 'draw_kanji') {
+                    // Check drawing quiz answer (self-marked)
+                    var state = drawQuizState[idx];
+                    var answer = answers[idx];
+                    
+                    if (answer && answer.selfMarked === 'correct') {
+                        correct++;
+                    } else if (answer && answer.selfMarked === 'incorrect') {
+                        mistakes.push(q);
+                    } else {
+                        // Not checked yet - auto-check now
+                        if (state && state.hasDrawn) {
+                            // Show answer for comparison
+                            checkDrawing(idx);
+                            showDrawFeedback(idx, '⚠️ Oceń swój rysunek i kliknij "Tak" lub "Nie"', 'hint');
+                        } else {
+                            mistakes.push(q);
+                            showDrawFeedback(idx, '❌ Nie narysowano kanji', 'error');
+                            // Try to show answer safely
+                            try {
+                                if (state && state.writer) {
+                                    var answerBoxContainer = document.getElementById('draw-answer-box-' + idx);
+                                    if (answerBoxContainer) answerBoxContainer.classList.add('show');
+                                    state.writer.showCharacter();
+                                    state.writer.animateCharacter();
+                                }
+                            } catch (e) {
+                                console.log('Could not animate draw answer:', e);
+                            }
+                        }
                     }
-                }
-                
-                if (answers[idx] === q.correct) {
-                    correct++;
+                } else if (q.type === 'stroke_order') {
+                    // Check stroke order quiz
+                    var state = strokeQuizState[idx];
+                    var answer = answers[idx];
+                    
+                    if (answer && answer.complete) {
+                        correct++;
+                    } else {
+                        mistakes.push(q);
+                        if (state && !state.locked) {
+                            // Lock and show answer if not already locked
+                            state.locked = true;
+                            try {
+                                if (state.writer) {
+                                    state.writer.showCharacter();
+                                    state.writer.animateCharacter();
+                                }
+                            } catch (e) {
+                                console.log('Could not animate stroke answer:', e);
+                            }
+                            var box = document.getElementById('stroke-box-' + idx);
+                            if (box) {
+                                box.style.pointerEvents = 'none';
+                                box.classList.add('locked');
+                            }
+                            showStrokeFeedback(idx, '❌ Nie ukończono. Obejrzyj poprawną animację.', 'error');
+                        }
+                    }
+                } else if (q.type === 'bomb_defuse') {
+                    // Check bomb defuse game
+                    var state = bombState[idx];
+                    var answer = answers[idx];
+                    
+                    if (answer && answer.defused) {
+                        correct++;
+                    } else if (!state || !state.started) {
+                        // Never started
+                        mistakes.push(q);
+                        var questionCard = document.getElementById('q' + idx);
+                        if (questionCard) questionCard.classList.add('unanswered');
+                    } else {
+                        mistakes.push(q);
+                    }
+                } else if (q.type === 'runner_game') {
+                    // Check runner game
+                    var state = runnerState[idx];
+                    var answer = answers[idx];
+                    
+                    if (answer && answer.won) {
+                        correct++;
+                    } else if (!state || !state.started) {
+                        // Never started
+                        mistakes.push(q);
+                        var questionCard = document.getElementById('q' + idx);
+                        if (questionCard) questionCard.classList.add('unanswered');
+                    } else {
+                        mistakes.push(q);
+                    }
+                } else if (q.type === 'scramble' || q.type === 'reading_scramble') {
+                    // Check scramble answer (kanji or reading)
+                    var answerDiv = document.getElementById('scramble-answer-' + idx);
+                    var resultDiv = document.getElementById('scramble-result-' + idx);
+                    var userAnswer = answers[idx] || '';
+                    var hasAnswer = userAnswer.length > 0;
+                    var isCorrect = userAnswer === q.correct;
+                    
+                    answerDiv.classList.remove('correct', 'incorrect');
+                    answerDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    
+                    resultDiv.classList.add('show');
+                    resultDiv.classList.remove('correct', 'incorrect');
+                    resultDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    
+                    if (!hasAnswer) {
+                        resultDiv.innerHTML = '⚠️ Brak odpowiedzi. Poprawna: ' + q.correct;
+                        var questionCard = document.getElementById('q' + idx);
+                        if (questionCard) questionCard.classList.add('unanswered');
+                    } else {
+                        resultDiv.innerHTML = isCorrect ? 
+                            '✅ Poprawnie!' : 
+                            '❌ Poprawna odpowiedź: ' + q.correct;
+                    }
+                    
+                    if (isCorrect) {
+                        correct++;
+                    } else {
+                        mistakes.push(q);
+                    }
+                } else if (q.type === 'all_readings') {
+                    // Check multi-select answer
+                    var options = document.querySelectorAll('#q' + idx + ' .option');
+                    var userSelected = multiSelectAnswers[idx] || [];
+                    var correctIndices = q.correct_indices || [];
+                    var hasAnswer = userSelected.length > 0;
+                    
+                    // Check if user selected exactly the correct options
+                    var isCorrect = true;
+                    if (userSelected.length !== correctIndices.length) {
+                        isCorrect = false;
+                    } else {
+                        var sortedUser = userSelected.slice().sort();
+                        var sortedCorrect = correctIndices.slice().sort();
+                        for (var ci = 0; ci < sortedUser.length; ci++) {
+                            if (sortedUser[ci] !== sortedCorrect[ci]) {
+                                isCorrect = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Mark as unanswered if no selections
+                    if (!hasAnswer) {
+                        var questionCard = document.getElementById('q' + idx);
+                        if (questionCard) questionCard.classList.add('unanswered');
+                    }
+                    
+                    // Mark correct and incorrect options
+                    for (var optIdx = 0; optIdx < options.length; optIdx++) {
+                        var opt = options[optIdx];
+                        var checkbox = opt.querySelector('.option-checkbox');
+                        opt.classList.remove('selected', 'correct', 'incorrect');
+                        
+                        var isCorrectOption = correctIndices.indexOf(optIdx) > -1;
+                        var wasSelected = userSelected.indexOf(optIdx) > -1;
+                        
+                        if (isCorrectOption) {
+                            opt.classList.add('correct');
+                            checkbox.textContent = '✓';
+                        } else if (wasSelected) {
+                            opt.classList.add('incorrect');
+                            checkbox.textContent = '✗';
+                        } else {
+                            checkbox.textContent = '☐';
+                        }
+                    }
+                    
+                    if (isCorrect) {
+                        correct++;
+                    } else {
+                        mistakes.push(q);
+                    }
                 } else {
-                    mistakes.push(q);
+                    // Check multiple choice answer
+                    var options = document.querySelectorAll('#q' + idx + ' .option');
+                    var hasAnswer = (answers[idx] !== undefined && answers[idx] !== null);
+                    
+                    for (var optIdx = 0; optIdx < options.length; optIdx++) {
+                        var opt = options[optIdx];
+                        opt.classList.remove('selected', 'correct', 'incorrect');
+                        if (optIdx === q.correct) {
+                            opt.classList.add('correct');
+                        } else if (answers[idx] === optIdx) {
+                            opt.classList.add('incorrect');
+                        }
+                    }
+                    
+                    // Mark question card if no answer
+                    var questionCard = document.getElementById('q' + idx);
+                    if (!hasAnswer && questionCard) {
+                        questionCard.classList.add('unanswered');
+                    }
+                    
+                    if (answers[idx] === q.correct) {
+                        correct++;
+                    } else {
+                        mistakes.push(q);
+                    }
                 }
             }
             
@@ -659,9 +3505,35 @@
         }
         
         function scrollToFirstMistake() {
-            var incorrectOption = document.querySelector('.option.incorrect');
-            if (incorrectOption) {
-                incorrectOption.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Find first incorrect or unanswered question card
+            var unansweredCard = document.querySelector('.question-card.unanswered');
+            
+            // Find first incorrect element (multiple choice, scramble, draw, stroke, runner, bomb)
+            var incorrectElement = document.querySelector('.option.incorrect') ||
+                                   document.querySelector('.scramble-answer.incorrect') ||
+                                   document.querySelector('.draw-canvas.incorrect') ||
+                                   document.querySelector('.stroke-quiz-box.locked') ||
+                                   document.querySelector('.scramble-result.incorrect') ||
+                                   document.querySelector('.runner-result.failed') ||
+                                   document.querySelector('.bomb-result.failed');
+            
+            // Prefer unanswered, then incorrect
+            if (unansweredCard) {
+                unansweredCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (incorrectElement) {
+                // Scroll to the parent question card
+                var questionCard = incorrectElement.closest('.question-card');
+                if (questionCard) {
+                    questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    incorrectElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                // No visible incorrect element, scroll to first question
+                var firstQuestion = document.querySelector('.question-card');
+                if (firstQuestion) {
+                    firstQuestion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }
         }
         
@@ -714,10 +3586,56 @@
         }
         
         function resetTest() {
+            // Clear all answers
             var keys = Object.keys(answers);
             for (var i = 0; i < keys.length; i++) {
                 delete answers[keys[i]];
             }
+            
+            // Clear scramble answers
+            var scrambleKeys = Object.keys(scrambleAnswers);
+            for (var k = 0; k < scrambleKeys.length; k++) {
+                delete scrambleAnswers[scrambleKeys[k]];
+            }
+            
+            // Clear multi-select answers
+            var multiKeys = Object.keys(multiSelectAnswers);
+            for (var m = 0; m < multiKeys.length; m++) {
+                delete multiSelectAnswers[multiKeys[m]];
+            }
+            
+            // Clear kanji writers
+            var writerKeys = Object.keys(kanjiWriters);
+            for (var w = 0; w < writerKeys.length; w++) {
+                delete kanjiWriters[writerKeys[w]];
+            }
+            
+            // Clear bomb state timers
+            var bombKeys = Object.keys(bombState);
+            for (var b = 0; b < bombKeys.length; b++) {
+                if (bombState[bombKeys[b]].timerInterval) {
+                    clearInterval(bombState[bombKeys[b]].timerInterval);
+                }
+                delete bombState[bombKeys[b]];
+            }
+            
+            // Clear runner state timers
+            var runnerKeys = Object.keys(runnerState);
+            for (var r = 0; r < runnerKeys.length; r++) {
+                if (runnerState[runnerKeys[r]].timerInterval) {
+                    clearInterval(runnerState[runnerKeys[r]].timerInterval);
+                }
+                delete runnerState[runnerKeys[r]];
+            }
+            
+            // Hide all animation containers
+            var animContainers = document.querySelectorAll('.kanji-animation-container');
+            for (var a = 0; a < animContainers.length; a++) {
+                animContainers[a].classList.remove('show');
+            }
+            
+            // Re-render questions (this resets all states)
+            renderQuestions();
             
             var options = document.querySelectorAll('.option');
             for (var j = 0; j < options.length; j++) {
