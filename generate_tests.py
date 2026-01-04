@@ -1392,7 +1392,7 @@ Examples:
   %(prog)s --list-files                       # Show available files
         '''
     )
-    parser.add_argument('-d', '--directory', default='.', help='Directory containing .shirabe files')
+    parser.add_argument('-d', '--directory', default='shirabe_files', help='Directory containing .shirabe files')
     parser.add_argument('-f', '--files', nargs='+', metavar='RANGE',
                        help='Specific file ranges to include (e.g., 1411-1420 1431-1440)')
     parser.add_argument('--list-files', action='store_true',
