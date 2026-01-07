@@ -1330,8 +1330,15 @@ def load_template() -> str:
         return f.read()
 
 
-def generate_html_test(questions: List[dict], title: str = "Kanji Test") -> str:
-    """Generate an interactive HTML test from template."""
+def generate_html_test(questions: List[dict], title: str = "Kanji Test", 
+                       ranges: List[dict] = None) -> str:
+    """Generate an interactive HTML test from template.
+    
+    Args:
+        questions: List of question dictionaries
+        title: Test title
+        ranges: List of range info dicts with 'id', 'name', 'count' keys
+    """
     
     # Prepare questions data for JSON
     questions_js = []
@@ -1347,7 +1354,8 @@ def generate_html_test(questions: List[dict], title: str = "Kanji Test") -> str:
             'kanji': entry.kanji,
             'reading': entry.reading,
             'meaning': entry.meanings[0] if entry.meanings else '',
-            'jishoUrl': f"https://jisho.org/search/{entry.kanji}"
+            'jishoUrl': f"https://jisho.org/search/{entry.kanji}",
+            'range': q.get('range', 'unknown')  # Include range for filtering
         }
         
         # Handle different question types
@@ -1368,12 +1376,97 @@ def generate_html_test(questions: List[dict], title: str = "Kanji Test") -> str:
         
         questions_js.append(q_data)
     
+    # Prepare ranges data (default to empty if not provided)
+    if ranges is None:
+        ranges = []
+    
     # Load and fill template
     template = load_template()
     html_content = template.replace('%%TITLE%%', html.escape(title))
     html_content = html_content.replace('%%QUESTIONS_JSON%%', json.dumps(questions_js, ensure_ascii=False))
+    html_content = html_content.replace('%%RANGES_JSON%%', json.dumps(ranges, ensure_ascii=False))
     
     return html_content
+
+
+def generate_app_questions(directory: str, question_types: List[str] = None, 
+                           questions_per_entry: int = 4) -> tuple:
+    """Generate questions for ALL ranges for app mode.
+    
+    Returns:
+        (questions, ranges) - all questions with range info, and range metadata
+    """
+    all_files = get_available_files(directory)
+    all_questions = []
+    ranges_info = []
+    
+    if question_types is None:
+        question_types = ['kanji_to_polish', 'polish_to_kanji', 'reading', 'reading_to_kanji', 
+                         'kanji_compound', 'scramble', 'reading_scramble', 'all_readings', 
+                         'draw_kanji', 'stroke_order', 'bomb_defuse', 'runner_game']
+    
+    if not all_files:
+        return [], []
+    
+    generators = {
+        'kanji_to_polish': generate_kanji_to_polish_question,
+        'polish_to_kanji': generate_polish_to_kanji_question,
+        'reading': generate_reading_question,
+        'reading_to_kanji': generate_reading_to_kanji_question,
+        'kanji_compound': generate_kanji_compound_question,
+        'scramble': generate_scramble_question,
+        'reading_scramble': generate_reading_scramble_question,
+        'all_readings': generate_all_readings_question,
+        'draw_kanji': generate_draw_kanji_question,
+        'stroke_order': generate_stroke_order_question,
+        'bomb_defuse': generate_bomb_defuse_question,
+        'runner_game': generate_runner_game_question,
+    }
+    
+    fallback_types = ['kanji_to_polish', 'polish_to_kanji', 'reading', 'scramble']
+    
+    for filename in all_files:
+        range_name = filename.replace('.shirabe', '')
+        filepath = os.path.join(directory, filename)
+        entries = parse_shirabe_file(filepath)
+        
+        if not entries:
+            continue
+        
+        ranges_info.append({
+            'id': range_name,
+            'name': range_name,
+            'count': len(entries)
+        })
+        
+        # Generate multiple questions per entry with different types
+        range_questions = []
+        for entry in entries:
+            # Generate questions_per_entry questions for each entry
+            types_to_use = random.sample(question_types, min(questions_per_entry, len(question_types)))
+            
+            for q_type in types_to_use:
+                if q_type not in generators:
+                    continue
+                    
+                question = generators[q_type](entry, entries)
+                
+                # Handle None returns (e.g., kanji not in Hanzi Writer)
+                if question is None:
+                    for fallback in fallback_types:
+                        if fallback in generators and fallback != q_type:
+                            question = generators[fallback](entry, entries)
+                            if question is not None:
+                                break
+                
+                if question is not None:
+                    question['range'] = range_name
+                    range_questions.append(question)
+        
+        all_questions.extend(range_questions)
+        print(f"   📝 {range_name}: {len(range_questions)} pytań z {len(entries)} słówek")
+    
+    return all_questions, ranges_info
 
 
 def main():
@@ -1390,6 +1483,7 @@ Examples:
   %(prog)s -f 1411-1420 1431-1440             # Test specific ranges
   %(prog)s -f 1411-1420 -n 10 -o test1.html   # 10 questions from 1411-1420
   %(prog)s --list-files                       # Show available files
+  %(prog)s --app                              # Generate interactive app with all ranges
         '''
     )
     parser.add_argument('-d', '--directory', default='shirabe_files', help='Directory containing .shirabe files')
@@ -1408,6 +1502,8 @@ Examples:
                        help='Force refresh kanji cache from Jisho API')
     parser.add_argument('--offline', action='store_true',
                        help='Use only cached/fallback kanji (no API calls)')
+    parser.add_argument('--app', action='store_true',
+                       help='Generate interactive app with landing page and all ranges')
     
     args = parser.parse_args()
     
@@ -1425,6 +1521,49 @@ Examples:
             print("❌ No .shirabe files found in directory")
         return
     
+    # Load fake kanji pool
+    print("🀄 Loading fake kanji pool for wrong answers...")
+    if args.offline:
+        # Use cached or fallback only
+        cached = load_kanji_cache()
+        if cached:
+            global FAKE_KANJI_POOL
+            FAKE_KANJI_POOL = cached
+            print(f"   📦 Loaded {len(cached)} kanji from cache")
+        else:
+            FAKE_KANJI_POOL = FALLBACK_KANJI_POOL
+            print(f"   ⚠️  Using fallback list ({len(FALLBACK_KANJI_POOL)} kanji)")
+    else:
+        fetch_fake_kanji_pool(force_refresh=args.refresh_kanji)
+    
+    # APP MODE - generate all questions for all ranges
+    if args.app:
+        print(f"🎌 Generating interactive app with all ranges...")
+        questions, ranges_info = generate_app_questions(args.directory, args.types)
+        
+        if not questions:
+            print("❌ No questions generated!")
+            return
+        
+        print(f"   📊 Total: {len(questions)} pytań z {len(ranges_info)} zakresów")
+        
+        # Generate HTML
+        output_path = args.output if args.output != 'test.html' else 'kanji_app.html'
+        if os.path.exists(output_path):
+            print(f"📄 Overwriting existing app: {output_path}")
+        else:
+            print(f"📄 Generating interactive app: {output_path}")
+        
+        html_content = generate_html_test(questions, args.title, ranges_info)
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        print(f"✅ App saved to {output_path}")
+        print(f"   Open in your browser to start learning!")
+        return
+    
+    # STANDARD MODE - specific files/questions
     # Load vocabulary
     if args.files:
         print(f"📚 Loading vocabulary from: {', '.join(args.files)}...")
@@ -1444,24 +1583,18 @@ Examples:
         print("❌ No vocabulary entries found!")
         return
     
-    # Load fake kanji pool
-    print("🀄 Loading fake kanji pool for wrong answers...")
-    if args.offline:
-        # Use cached or fallback only
-        cached = load_kanji_cache()
-        if cached:
-            global FAKE_KANJI_POOL
-            FAKE_KANJI_POOL = cached
-            print(f"   📦 Loaded {len(cached)} kanji from cache")
-        else:
-            FAKE_KANJI_POOL = FALLBACK_KANJI_POOL
-            print(f"   ⚠️  Using fallback list ({len(FALLBACK_KANJI_POOL)} kanji)")
-    else:
-        fetch_fake_kanji_pool(force_refresh=args.refresh_kanji)
-    
     # Generate test
     print(f"🎲 Generating test with {args.num_questions} questions...")
     questions = generate_test(entries, args.num_questions, args.types)
+    
+    # Add range info for standard mode too
+    for q in questions:
+        entry = q['entry']
+        q['range'] = entry.source_file.replace('.shirabe', '')
+    
+    # Get range info for standard mode
+    loaded_ranges = list(set(e.source_file.replace('.shirabe', '') for e in entries))
+    ranges_info = [{'id': r, 'name': r, 'count': sum(1 for e in entries if e.source_file.replace('.shirabe', '') == r)} for r in loaded_ranges]
     
     if args.console:
         print_test_console(questions)
@@ -1473,7 +1606,7 @@ Examples:
     else:
         print(f"📄 Generating HTML test: {output_path}")
     
-    html_content = generate_html_test(questions, args.title)
+    html_content = generate_html_test(questions, args.title, ranges_info)
     
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html_content)

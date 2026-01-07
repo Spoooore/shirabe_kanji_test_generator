@@ -1810,13 +1810,285 @@
                 font-size: 1.3rem;
             }
         }
+        
+        /* ===== LANDING PAGE ===== */
+        .landing-page {
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .landing-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px var(--soft-shadow);
+            padding: 3rem;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .landing-logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .landing-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 2.5rem;
+            color: var(--ink-black);
+            margin-bottom: 0.5rem;
+        }
+        
+        .landing-subtitle {
+            color: var(--accent-indigo);
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        
+        .input-label {
+            display: block;
+            font-weight: 600;
+            color: var(--accent-indigo);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-vermillion);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+        }
+        
+        .range-selection {
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        .range-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        
+        .range-checkbox {
+            display: none;
+        }
+        
+        .range-label {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            background: #f5f5f5;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        
+        .range-label:hover {
+            background: #eee;
+        }
+        
+        .range-checkbox:checked + .range-label {
+            background: rgba(230, 57, 70, 0.1);
+            border-color: var(--accent-vermillion);
+            color: var(--accent-vermillion);
+            font-weight: 600;
+        }
+        
+        .range-label::before {
+            content: '☐';
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .range-checkbox:checked + .range-label::before {
+            content: '☑';
+        }
+        
+        .range-count {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: auto;
+        }
+        
+        .select-all-btn {
+            background: none;
+            border: none;
+            color: var(--accent-indigo);
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: underline;
+            margin-top: 0.5rem;
+        }
+        
+        .select-all-btn:hover {
+            color: var(--accent-vermillion);
+        }
+        
+        .questions-slider {
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--accent-vermillion);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .slider-value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--accent-vermillion);
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, var(--accent-vermillion) 0%, #c62828 100%);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4);
+        }
+        
+        .start-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .test-container {
+            display: none;
+        }
+        
+        .test-container.active {
+            display: block;
+        }
+        
+        .user-greeting {
+            font-size: 1.1rem;
+            color: var(--accent-indigo);
+            margin-top: 0.25rem;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background: white;
+            border: 2px solid var(--accent-indigo);
+            color: var(--accent-indigo);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            z-index: 1000;
+            transition: all 0.2s;
+        }
+        
+        .back-btn:hover {
+            background: var(--accent-indigo);
+            color: white;
+        }
+        
+        .landing-page.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Landing Page -->
+    <div class="landing-page" id="landing-page">
+        <div class="landing-card">
+            <div class="landing-logo">🎌</div>
+            <h1 class="landing-title">漢字テスト</h1>
+            <p class="landing-subtitle">%%TITLE%%</p>
+            
+            <div class="input-group">
+                <label class="input-label" for="user-name">👤 Twoje imię</label>
+                <input type="text" id="user-name" class="input-field" placeholder="Wpisz swoje imię..." maxlength="30">
+            </div>
+            
+            <div class="range-selection">
+                <label class="input-label">📚 Wybierz zakresy kanji</label>
+                <div class="range-grid" id="range-grid">
+                    <!-- Ranges will be inserted here by JS -->
+                </div>
+                <button class="select-all-btn" onclick="toggleAllRanges()">Zaznacz/odznacz wszystkie</button>
+            </div>
+            
+            <div class="questions-slider">
+                <label class="input-label">📝 Liczba pytań</label>
+                <div class="slider-container">
+                    <input type="range" id="num-questions" class="slider" min="5" max="100" value="20">
+                    <span class="slider-value" id="num-questions-value">20</span>
+                </div>
+            </div>
+            
+            <button class="start-btn" id="start-btn" onclick="startTest()" disabled>
+                始める — Rozpocznij test
+            </button>
+        </div>
+    </div>
+    
+    <!-- Test Container (hidden initially) -->
+    <div class="container test-container" id="test-container">
+        <button class="back-btn" onclick="backToLanding()">← Powrót</button>
+        
         <header>
             <h1>漢字テスト</h1>
-            <p class="subtitle">%%TITLE%% — Test z kanji</p>
+            <p class="subtitle">%%TITLE%%</p>
+            <p class="user-greeting" id="user-greeting"></p>
         </header>
         
         <div class="progress-bar">
@@ -1889,8 +2161,11 @@
     
     <script>
         // ES5-compatible version for older Safari/iOS
-        var questions = %%QUESTIONS_JSON%%;
+        var allQuestions = %%QUESTIONS_JSON%%;
+        var availableRanges = %%RANGES_JSON%%;
+        var questions = [];  // Will be populated after user selection
         var answers = {};
+        var userName = '';
         
         var typeLabels = {
             'kanji_to_polish': '日→PL Przetłumacz kanji na polski',
@@ -3679,17 +3954,157 @@
             window.scrollTo(0, 0);
         }
         
-        // Initialize when DOM is ready - multiple fallbacks for compatibility
-        function init() {
+        // ===== LANDING PAGE FUNCTIONS =====
+        
+        function initLandingPage() {
+            var grid = document.getElementById('range-grid');
+            if (!grid) return;
+            
+            // Populate range checkboxes
+            var html = '';
+            for (var i = 0; i < availableRanges.length; i++) {
+                var range = availableRanges[i];
+                html += '<input type="checkbox" class="range-checkbox" id="range-' + range.id + '" value="' + range.id + '" onchange="updateStartButton()">';
+                html += '<label class="range-label" for="range-' + range.id + '">';
+                html += range.name + ' <span class="range-count">(' + range.count + ')</span>';
+                html += '</label>';
+            }
+            grid.innerHTML = html;
+            
+            // Set up slider
+            var slider = document.getElementById('num-questions');
+            var sliderValue = document.getElementById('num-questions-value');
+            if (slider && sliderValue) {
+                slider.oninput = function() {
+                    sliderValue.textContent = this.value;
+                };
+            }
+            
+            // Set up name input
+            var nameInput = document.getElementById('user-name');
+            if (nameInput) {
+                nameInput.oninput = updateStartButton;
+            }
+        }
+        
+        function toggleAllRanges() {
+            var checkboxes = document.querySelectorAll('.range-checkbox');
+            var anyChecked = false;
+            for (var i = 0; i < checkboxes.length; i++) {
+                if (checkboxes[i].checked) {
+                    anyChecked = true;
+                    break;
+                }
+            }
+            for (var i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = !anyChecked;
+            }
+            updateStartButton();
+        }
+        
+        function updateStartButton() {
+            var startBtn = document.getElementById('start-btn');
+            var nameInput = document.getElementById('user-name');
+            var checkboxes = document.querySelectorAll('.range-checkbox:checked');
+            
+            var hasName = nameInput && nameInput.value.trim().length > 0;
+            var hasRange = checkboxes.length > 0;
+            
+            if (startBtn) {
+                startBtn.disabled = !(hasName && hasRange);
+            }
+        }
+        
+        function startTest() {
+            // Get user name
+            var nameInput = document.getElementById('user-name');
+            userName = nameInput ? nameInput.value.trim() : 'Użytkownik';
+            
+            // Get selected ranges
+            var checkboxes = document.querySelectorAll('.range-checkbox:checked');
+            var selectedRanges = [];
+            for (var i = 0; i < checkboxes.length; i++) {
+                selectedRanges.push(checkboxes[i].value);
+            }
+            
+            // Get number of questions
+            var slider = document.getElementById('num-questions');
+            var numQuestions = slider ? parseInt(slider.value) : 20;
+            
+            // Filter questions by selected ranges
+            var filteredQuestions = [];
+            for (var i = 0; i < allQuestions.length; i++) {
+                var q = allQuestions[i];
+                if (selectedRanges.indexOf(q.range) !== -1) {
+                    filteredQuestions.push(q);
+                }
+            }
+            
+            // Shuffle and limit
+            shuffleArray(filteredQuestions);
+            questions = filteredQuestions.slice(0, Math.min(numQuestions, filteredQuestions.length));
+            
+            // Re-index questions
+            for (var i = 0; i < questions.length; i++) {
+                questions[i].id = i;
+            }
+            
+            // Update greeting
+            var greeting = document.getElementById('user-greeting');
+            if (greeting) {
+                greeting.textContent = 'Powodzenia, ' + userName + '! 頑張って！';
+            }
+            
+            // Show test, hide landing
+            document.getElementById('landing-page').classList.add('hidden');
+            document.getElementById('test-container').classList.add('active');
+            
+            // Reset and render
+            answers = {};
+            scrambleAnswers = {};
+            multiSelectAnswers = {};
+            drawQuizState = {};
+            strokeQuizState = {};
+            bombState = {};
+            runnerState = {};
+            
             try {
                 renderQuestions();
             } catch (e) {
-                // Show error in the questions container
+                console.error('Error rendering questions:', e);
                 var container = document.getElementById('questions');
                 if (container) {
-                    container.innerHTML = '<div style="padding:20px;color:red;">Error: ' + e.message + '</div>';
+                    container.innerHTML = '<div style="padding:20px;color:red;">Błąd: ' + e.message + '</div>';
                 }
-                console.error('Error rendering questions:', e);
+            }
+            
+            window.scrollTo(0, 0);
+        }
+        
+        function shuffleArray(array) {
+            for (var i = array.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+        }
+        
+        function backToLanding() {
+            if (confirm('Czy na pewno chcesz wrócić? Twój postęp zostanie utracony.')) {
+                document.getElementById('landing-page').classList.remove('hidden');
+                document.getElementById('test-container').classList.remove('active');
+                document.getElementById('results').classList.remove('show');
+                window.scrollTo(0, 0);
+            }
+        }
+        
+        // Initialize when DOM is ready - multiple fallbacks for compatibility
+        function init() {
+            try {
+                initLandingPage();
+            } catch (e) {
+                console.error('Error initializing landing page:', e);
             }
         }
         
@@ -3702,8 +4117,8 @@
         
         // Fallback: also try on window load
         window.onload = function() {
-            var container = document.getElementById('questions');
-            if (container && container.innerHTML.trim() === '') {
+            var grid = document.getElementById('range-grid');
+            if (grid && grid.innerHTML.trim() === '') {
                 init();
             }
         };

@@ -1,0 +1,22 @@
+# Python files (not needed in container)
+*.py
+__pycache__/
+*.pyc
+
+# Cache files
+.kanji_cache.json
+.hanzi_available.json
+.kanji_readings.json
+
+# Git
+.git/
+.gitignore
+
+# Development
+*.md
+test.html
+kanji_test.html
+
+# Shirabe source files (embedded in HTML)
+shirabe_files/
+
