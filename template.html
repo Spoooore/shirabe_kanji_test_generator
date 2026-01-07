@@ -4062,6 +4062,12 @@
             var container = document.getElementById('leaderboard-container');
             if (!container) return;
             
+            // Check if we're running from file:// or without server
+            if (window.location.protocol === 'file:') {
+                container.innerHTML = '<div class="leaderboard-empty">📴 Ranking dostępny tylko online</div>';
+                return;
+            }
+            
             fetch('/api/leaderboard')
                 .then(function(response) {
                     if (!response.ok) throw new Error('Network error');
@@ -4072,7 +4078,7 @@
                 })
                 .catch(function(err) {
                     console.log('Leaderboard not available:', err);
-                    container.innerHTML = '<div class="leaderboard-empty">Ranking niedostępny offline</div>';
+                    container.innerHTML = '<div class="leaderboard-empty">🔌 Połącz z bazą danych na Railway</div>';
                 });
         }
         
