@@ -2044,6 +2044,95 @@
         .landing-page.hidden {
             display: none;
         }
+        
+        /* ===== LEADERBOARD ===== */
+        .leaderboard-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .leaderboard-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1.3rem;
+            color: var(--accent-indigo);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        
+        .leaderboard-table th {
+            background: var(--accent-indigo);
+            color: white;
+            padding: 0.6rem 0.8rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .leaderboard-table th:first-child {
+            border-radius: 8px 0 0 0;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .leaderboard-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+        
+        .leaderboard-table td {
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .leaderboard-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .leaderboard-table tr:hover {
+            background: rgba(45, 64, 89, 0.05);
+        }
+        
+        .leaderboard-rank {
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        .leaderboard-rank.gold { color: #FFD700; }
+        .leaderboard-rank.silver { color: #C0C0C0; }
+        .leaderboard-rank.bronze { color: #CD7F32; }
+        
+        .leaderboard-name {
+            font-weight: 600;
+            color: var(--ink-black);
+        }
+        
+        .leaderboard-score {
+            font-weight: 700;
+            color: var(--accent-vermillion);
+        }
+        
+        .leaderboard-tests {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .leaderboard-empty {
+            text-align: center;
+            color: #888;
+            padding: 1.5rem;
+            font-style: italic;
+        }
+        
+        .leaderboard-loading {
+            text-align: center;
+            color: #888;
+            padding: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -2078,6 +2167,14 @@
             <button class="start-btn" id="start-btn" onclick="startTest()" disabled>
                 始める — Rozpocznij test
             </button>
+            
+            <!-- Leaderboard -->
+            <div class="leaderboard-section">
+                <div class="leaderboard-title">🏆 Ranking graczy</div>
+                <div id="leaderboard-container">
+                    <div class="leaderboard-loading">Ładowanie rankingu...</div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -2166,6 +2263,7 @@
         var questions = [];  // Will be populated after user selection
         var answers = {};
         var userName = '';
+        var selectedRanges = [];  // Store selected ranges for score submission
         
         var typeLabels = {
             'kanji_to_polish': '日→PL Przetłumacz kanji na polski',
@@ -3797,6 +3895,10 @@
                 mistakesList.innerHTML = mistakesHtml;
             }
             
+            // Submit score to leaderboard
+            var selectedRangesStr = selectedRanges ? selectedRanges.join(', ') : '';
+            submitScore(correct, questions.length, selectedRangesStr);
+            
             document.getElementById('results').classList.add('show');
             
             // Scroll to results
@@ -3954,6 +4056,90 @@
             window.scrollTo(0, 0);
         }
         
+        // ===== LEADERBOARD FUNCTIONS =====
+        
+        function loadLeaderboard() {
+            var container = document.getElementById('leaderboard-container');
+            if (!container) return;
+            
+            fetch('/api/leaderboard')
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Network error');
+                    return response.json();
+                })
+                .then(function(data) {
+                    renderLeaderboard(data);
+                })
+                .catch(function(err) {
+                    console.log('Leaderboard not available:', err);
+                    container.innerHTML = '<div class="leaderboard-empty">Ranking niedostępny offline</div>';
+                });
+        }
+        
+        function renderLeaderboard(data) {
+            var container = document.getElementById('leaderboard-container');
+            if (!container) return;
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="leaderboard-empty">Brak wyników - bądź pierwszy!</div>';
+                return;
+            }
+            
+            var html = '<table class="leaderboard-table">';
+            html += '<tr><th>#</th><th>Gracz</th><th>Punkty</th><th>Testy</th></tr>';
+            
+            for (var i = 0; i < data.length; i++) {
+                var entry = data[i];
+                var rankClass = '';
+                var rankIcon = entry.rank;
+                
+                if (entry.rank === 1) { rankClass = 'gold'; rankIcon = '🥇'; }
+                else if (entry.rank === 2) { rankClass = 'silver'; rankIcon = '🥈'; }
+                else if (entry.rank === 3) { rankClass = 'bronze'; rankIcon = '🥉'; }
+                
+                html += '<tr>';
+                html += '<td class="leaderboard-rank ' + rankClass + '">' + rankIcon + '</td>';
+                html += '<td class="leaderboard-name">' + escapeHtml(entry.name) + '</td>';
+                html += '<td class="leaderboard-score">' + entry.total_score + '</td>';
+                html += '<td class="leaderboard-tests">' + entry.tests_taken + ' (' + entry.avg_percent.toFixed(0) + '%)</td>';
+                html += '</tr>';
+            }
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+        
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function submitScore(score, total, ranges) {
+            if (!userName) return;
+            
+            fetch('/api/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: userName,
+                    score: score,
+                    total: total,
+                    ranges: ranges
+                })
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    console.log('Score submitted successfully');
+                    // Reload leaderboard
+                    loadLeaderboard();
+                }
+            })
+            .catch(function(err) {
+                console.log('Could not submit score:', err);
+            });
+        }
+        
         // ===== LANDING PAGE FUNCTIONS =====
         
         function initLandingPage() {
@@ -3985,6 +4171,9 @@
             if (nameInput) {
                 nameInput.oninput = updateStartButton;
             }
+            
+            // Load leaderboard
+            loadLeaderboard();
         }
         
         function toggleAllRanges() {
@@ -4020,9 +4209,9 @@
             var nameInput = document.getElementById('user-name');
             userName = nameInput ? nameInput.value.trim() : 'Użytkownik';
             
-            // Get selected ranges
+            // Get selected ranges (store in global variable)
             var checkboxes = document.querySelectorAll('.range-checkbox:checked');
-            var selectedRanges = [];
+            selectedRanges = [];  // Use global variable
             for (var i = 0; i < checkboxes.length; i++) {
                 selectedRanges.push(checkboxes[i].value);
             }
